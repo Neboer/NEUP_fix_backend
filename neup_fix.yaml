@@ -1,0 +1,427 @@
+openapi: 3.0.0
+# Added by API Auto Mocking Plugin
+# Added by API Auto Mocking Plugin
+info:
+  version: "1.0.0"
+  title: 先锋硬件维修系统后端
+  description: NEUP_fix后端文档
+paths:
+  /announcement:
+    get:
+      tags:
+        - 公告
+      description: 返回所有公告组成的列表
+      operationId: getAnnouncement
+      responses:
+        '200':
+          description: 返回所有公告。
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    annid:
+                      type: string
+                      example: "SASI12d4s5e6dfsd2"
+                    text:
+                      type: string
+                      example: "Only my railgun!"
+                    image:
+                      type: string
+                      format: url
+                      example: "https://camo.githubusercontent.com/0a418b2480838f49dd7225e1f29df77753a8ab96/687474703a2f2f67657477616c6c7061706572732e636f6d2f77616c6c70617065722f66756c6c2f302f652f332f3932333239332d6e65772d656d696c792d7468652d737472616e67652d77616c6c70617065722d3236373678313434302e6a7067"
+    post:
+      security: 
+      - cookieAuth: [Admin]
+      tags:
+        - 公告
+      operationId: addAnnouncement
+      description: 增加一条公告
+      requestBody:
+        description: 增加的公告内容
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                text:
+                  type: string
+                image:
+                  type: string
+              required: 
+                [text,image]
+      responses:
+        '200':
+          description: 提交成功
+          content:
+            text/plain:
+              schema:
+                type: string
+              example: "success"
+        '400':
+          description: 请求格式错误
+          content:
+            text/plain:
+              schema:
+                type: string
+              example: "wrong request format"
+        '401':
+          description: 请求需要登录
+        '405':
+          description: 请求所需权限不够
+    delete:
+      tags: 
+      - 公告
+      security: 
+      - cookieAuth: [Admin]
+      description: 删除一个公告
+      parameters: 
+      - in: query
+        name: appid
+        schema:
+          type: string
+          example: "sddf1edf-asde54f5e2d-assssdf"
+      responses:
+        '204':
+          description: 删除成功
+          content:
+            text/plain:
+              schema:
+                type: string
+              example: success delete.
+        '410':
+          description: 找不到删除的目标
+        '405':
+          description: 请求的权限不够
+        '400':
+          description: 请求格式错误
+  /user:
+    get:
+      description: 返回对应的用户信息
+      tags: 
+      - 用户信息
+      parameters: 
+      - in: query
+        name: userid
+        required: true
+        description: 对应id用户的基本信息
+        schema:
+          type: string
+          example: "userid=RAILGUN"
+      responses:
+        '200':
+          description: 查询成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserInfo'
+        '410':
+          description: 找不到删除的目标
+        '400':
+          description: 请求格式错误
+    put:
+      description: 修改一个用户的信息，只有用户自己和管理员有权限修改。
+      security: 
+      - cookieAuth: [User, Admin]
+      tags: 
+      - 用户信息
+      parameters: 
+      - in: query
+        name: userid
+        required: true
+        description: 要修改的用户的信息
+        schema:
+          type: string
+          example: "userid=RAILGUN"
+      requestBody:
+        description: 修改之后的新的信息
+        content:
+          application/json:
+            schema: 
+              $ref: '#/components/schemas/UserInfo'
+      responses:
+        "200":
+          description: 修改成功
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: modify success
+        '410':
+          description: 找不到修改的目标
+        '400':
+          description: 请求格式错误
+          
+  /app:
+    get:
+      tags: 
+      - 所有预约
+      description: 查询所有符合条件的预约并返回
+      parameters: 
+      - in: query
+        name: appid
+        description: 预约的编号
+        schema:
+          $ref: '#/components/schemas/Appointment_get/properties/appid'
+      
+      - in: query
+        name: status
+        description: 预约的状态
+        schema:
+          $ref: '#/components/schemas/Appointment_get/properties/status'
+          
+      - in: query
+        name: userid
+        description: 用户编号
+        schema:
+          $ref: '#/components/schemas/Appointment_get/properties/userid'
+      
+      - in: query
+        name: app_make_time
+        description: 发布时间
+        schema:
+          $ref: '#/components/schemas/Appointment_get/properties/app_make_time'
+      
+      - in: query
+        name: repair
+        description: 维修类型
+        schema:
+          $ref: '#/components/schemas/Appointment_get/properties/repair'
+          
+      - in: query
+        name: device_type
+        description: 设备类型
+        schema:
+          $ref: '#/components/schemas/Appointment_get/properties/device_type'
+        
+      - in: query
+        name: device_model
+        description: 设备型号
+        schema:
+          $ref: '#/components/schemas/Appointment_get/properties/device_model'
+      responses:
+        '200':
+          description: 请求成功，返回符合查询条件的列表
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Appointment_get'
+
+    post:
+      description: 提交一个预约
+      tags:
+        - 所有预约
+      requestBody:
+        description: 提交一个预约
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Appointment_post'
+      responses:
+        '200':
+          description: 提交成功
+        '400':
+          description: 请求格式错误
+        '401':
+          description: 请求的权限需要登录
+
+  /app/{appid}:
+    get:
+      description: 返回某条预约的细节数据，用户只有权限查询自己的预约详细信息
+      tags:
+        - 所有预约
+      security:
+        - cookieAuth: [Admin, User]
+      parameters:
+        - in: path
+          name: appid
+          schema:
+            type: string
+          description: 预约的编号          
+          required: true
+      responses:
+        '200':
+          description: 请求成功，返回特定预约的详细信息
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Appointment_detail'
+        '400':
+          description: 请求格式错误
+        '401':
+          description: 请求的权限需要登录
+        '405':
+          description: 请求所需权限不够
+
+
+      
+
+components:
+  schemas:
+    UserInfo:
+      type: object
+      properties:
+        userid:
+          description: 用户id
+          type: string
+          example: 2018XXXX
+        name:
+          description: 用户昵称
+          type: string
+          example: 御坂美琴
+        avatar:
+          description: 用户头像地址
+          type: string
+          format: url
+          example: https://mikoto.avatar.com
+        signature:
+          description: 用户自我签名描述
+          type: string
+          example: Only my railgun!
+    
+    Appointment_get:
+      type: object
+      properties:
+        appid:
+          type: string
+          description: 预约的编号
+          example: 012
+        status:
+          type: string
+          description: 预约状态
+          enum: 
+          - submitted
+          - successful
+          - failed
+          - canceled
+        userid:
+          type: string
+          description: 提交预约用户的id
+          example: 2018XXXX
+        app_make_time:
+          description: 预约信息的发布时间
+          type: string
+          format: jsontime
+        repair:
+          type: string
+          description: 维修的类型
+          example: 主板清灰
+        device_type:
+          type: string
+          description: 设备类型
+          example: laptop
+        device_model:
+          type: string
+          description: 设备型号
+          example: "DELL G3-3579"
+
+    Appointment_post:
+      type: object
+      properties:
+        userid:
+          $ref: '#/components/schemas/Appointment_get/properties/userid'
+        device_type:
+          $ref: '#/components/schemas/Appointment_get/properties/device_type'
+        device_model:
+          $ref: '#/components/schemas/Appointment_get/properties/device_model'
+        repair:
+          $ref: '#/components/schemas/Appointment_get/properties/repair'
+        describe:
+          type: string
+          description: 问题描述
+          example: 风扇有噪音，打团很吵。
+        contact:
+          type: array
+          description: 包括两项：联系方式名称和号码。形如例子。
+          items:
+            type: string
+          example: [qq,1653]
+        contact_time:
+          type: string
+          description: 用户方便联系的时间。如果用msn/irc等即时聊天工具，可以留空
+          example: "周六周日下午"
+        site:
+          type: string
+          description: 维修地点，可以选择上门和先锋204
+          example: 先锋204
+
+    Appointment_detail:
+      type: object
+      description: 一个预约的详细信息，包括Appointment_get中的基本信息。
+      properties:
+        appid:
+          $ref: '#/components/schemas/Appointment_get/properties/appid'
+        status:
+          $ref: '#/components/schemas/Appointment_get/properties/status'
+        userid:
+          $ref: '#/components/schemas/Appointment_get/properties/userid'
+        app_make_time:
+          $ref: '#/components/schemas/Appointment_get/properties/app_make_time'
+        repair:
+          $ref: '#/components/schemas/Appointment_get/properties/repair'
+        device_type:
+          $ref: '#/components/schemas/Appointment_get/properties/device_type'
+        device_model:
+          $ref: '#/components/schemas/Appointment_get/properties/device_model'
+        status_change_time:
+          description: 状态变更时间
+          type: string
+          format: jsontime
+          example: '2019-08-12T07:05:28.826Z'
+        describe:
+          $ref: '#/components/schemas/Appointment_post/properties/describe'
+        contact:
+          $ref: '#/components/schemas/Appointment_post/properties/contact'
+        contact_time:
+          $ref: '#/components/schemas/Appointment_post/properties/contact_time'
+        app_exec_time:
+          description: 预约好的维修时间
+          type: string
+          format: jsontime
+          example: '2019-08-12T07:05:28.826Z'
+        member:
+          description: 安排的维修人员
+          type: string
+          example: '炮姐，黑子'
+        site:
+          $ref: '#/components/schemas/Appointment_post/properties/site'
+        cancel_time:
+          description: 取消这个预约的时间，仅当一个预约被取消时才为非空
+          type: string
+          format: jsontime 或 空串
+          example: ''
+        cancel_reason:
+          description: 取消此预约的原因
+          type: string
+          example: '爷乐意'
+        cancel_user:
+          description: 取消此预约的用户id
+          type: string
+          example: '2018XXXX'
+
+
+        
+
+          
+
+
+
+
+
+
+        
+        
+
+  securitySchemes:
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: JSESSIONID
+
+
+# Added by API Auto Mocking Plugin
+servers:
+  - description: SwaggerHub API Auto Mocking
+    url: https://virtserver.swaggerhub.com/NEUP-Net-Depart/NEUP_fix/1.0.0
