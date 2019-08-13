@@ -55,18 +55,8 @@ paths:
       responses:
         '200':
           description: 提交成功
-          content:
-            text/plain:
-              schema:
-                type: string
-              example: "success"
         '400':
           description: 请求格式错误
-          content:
-            text/plain:
-              schema:
-                type: string
-              example: "wrong request format"
         '401':
           description: 请求需要登录
         '405':
@@ -86,11 +76,6 @@ paths:
       responses:
         '204':
           description: 删除成功
-          content:
-            text/plain:
-              schema:
-                type: string
-              example: success delete.
         '410':
           description: 找不到删除的目标
         '405':
@@ -144,11 +129,6 @@ paths:
       responses:
         "200":
           description: 修改成功
-          content:
-            text/plain:
-              schema:
-                type: string
-                example: modify success
         '410':
           description: 找不到修改的目标
         '400':
@@ -227,6 +207,7 @@ paths:
         '401':
           description: 请求的权限需要登录
 
+
   /app/{appid}:
     get:
       description: 返回某条预约的细节数据，用户只有权限查询自己的预约详细信息
@@ -278,7 +259,6 @@ paths:
               properties:
                 status:
                   $ref: '#/components/schemas/Appointment_get/properties/status'
-                  required: false
                 app_exec_time:
                   $ref: '#/components/schemas/Appointment_detail/properties/app_exec_time'
                 member:
@@ -299,6 +279,13 @@ paths:
 
     put:
       description: 更改一个已经提交的预约的内容。和提交一个新预约相同。这个是修改自己已经提交的预约的方法。用户仅可以修改自身提交的预约
+      parameters:
+        - in: path
+          name: appid
+          schema:
+            type: string
+          description: 预约的编号          
+          required: true
       security:
         - cookieAuth: [User, Admin]
       tags:
@@ -318,6 +305,13 @@ paths:
 
     delete:
       description: 删除特定的预约，用户只能删除自己创建的预约
+      parameters:
+        - in: path
+          name: appid
+          schema:
+            type: string
+          description: 预约的编号          
+          required: true
       tags:
         - 维修预约
       security:
@@ -325,11 +319,6 @@ paths:
       responses:
         '204':
           description: 删除成功
-          content:
-            text/plain:
-              schema:
-                type: string
-              example: success delete.
         '410':
           description: 找不到删除的目标
         '405':
@@ -443,11 +432,6 @@ paths:
       responses:
         '204':
           description: 删除成功
-          content:
-            text/plain:
-              schema:
-                type: string
-              example: success delete.
         '410':
           description: 找不到删除的目标
         '405':
