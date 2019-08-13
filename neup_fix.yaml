@@ -157,7 +157,7 @@ paths:
   /app:
     get:
       tags: 
-      - 所有预约
+      - 维修预约
       description: 查询所有符合条件的预约并返回
       parameters: 
       - in: query
@@ -212,7 +212,7 @@ paths:
     post:
       description: 提交一个预约
       tags:
-        - 所有预约
+        - 维修预约
       requestBody:
         description: 提交一个预约
         content:
@@ -231,7 +231,7 @@ paths:
     get:
       description: 返回某条预约的细节数据，用户只有权限查询自己的预约详细信息
       tags:
-        - 所有预约
+        - 维修预约
       security:
         - cookieAuth: [Admin, User]
       parameters:
@@ -255,8 +255,207 @@ paths:
         '405':
           description: 请求所需权限不够
 
-
+    patch:
+      description: 修改某条特定预约的特定属性，从四种属性中选择一种或多种来请求。只有硬件部才能修改。
+      tags:
+        - 维修预约
+      security:
+        - cookieAuth: [Admin]
       
+      parameters:
+        - in: path
+          name: appid
+          schema:
+            type: string
+          description: 预约的编号          
+          required: true
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              description: 在可以修改的四种属性里任选一种进行修改
+              properties:
+                status:
+                  $ref: '#/components/schemas/Appointment_get/properties/status'
+                  required: false
+                app_exec_time:
+                  $ref: '#/components/schemas/Appointment_detail/properties/app_exec_time'
+                member:
+                  $ref: '#/components/schemas/Appointment_detail/properties/member'
+                site:
+                  $ref: '#/components/schemas/Appointment_detail/properties/site'
+      responses:
+        '200':
+          description: 请求成功，修改成功。
+        '401':
+          description: 请求的权限需要登录
+        '405':
+          description: 请求所需权限不够
+        '410':
+          description: 找不到修改的目标
+        '400':
+          description: 请求格式错误
+
+    put:
+      description: 更改一个已经提交的预约的内容。和提交一个新预约相同。这个是修改自己已经提交的预约的方法。用户仅可以修改自身提交的预约
+      security:
+        - cookieAuth: [User, Admin]
+      tags:
+        - 维修预约
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Appointment_post'
+      responses:
+        '200':
+          description: 提交成功
+        '400':
+          description: 请求格式错误
+        '401':
+          description: 请求的权限需要登录
+
+    delete:
+      description: 删除特定的预约，用户只能删除自己创建的预约
+      tags:
+        - 维修预约
+      security:
+        - cookieAuth: [User, Admin]
+      responses:
+        '204':
+          description: 删除成功
+          content:
+            text/plain:
+              schema:
+                type: string
+              example: success delete.
+        '410':
+          description: 找不到删除的目标
+        '405':
+          description: 请求的权限不够
+        '400':
+          description: 请求格式错误
+
+  /app/{appid}/messageboard:
+    get:
+      tags:
+        - 留言板
+      parameters:
+        - in: path
+          name: appid
+          description: 查询指定预约编号下的所有留言信息。
+          schema:
+            $ref: '#/components/schemas/Appointment_get/properties/appid'
+          required: true
+      responses:
+        '200':
+          description: 请求成功，返回留言列表
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message_board'
+        '400':
+          description: 请求格式错误
+
+    post:
+      tags:
+        - 留言板
+      description: 添加一条留言，需要登录
+      security:
+        - cookieAuth: [User]
+      
+      parameters:
+        - in: path
+          name: appid
+          description: 在该条预约下留言
+          schema:
+            $ref: '#/components/schemas/Appointment_get/properties/appid'
+          required: true
+      responses:
+        '200':
+          description: OK
+        '400':
+          description: 请求格式错误
+        '401':
+          description: 请求的权限需要登录
+    
+  /app/{appid}/messageboard/{mesid}:
+    patch:
+      tags:
+        - 留言板
+      security:
+        - cookieAuth: [User,Admin]
+      description: 修改一个留言的内容。用户只能修改自己的留言
+      parameters:
+        - in: path
+          name: appid
+          description: 待修改留言所在的预约编号
+          schema:
+            $ref: '#/components/schemas/Appointment_get/properties/appid'
+          required: true
+        - in: path
+          name: mesid
+          description: 待修改留言的全局统一编号
+          schema:
+            $ref: '#/components/schemas/Message_board/items/properties/mesid'
+          required: true 
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                content:
+                  $ref: '#/components/schemas/Message_board/items/properties/content'
+      
+      responses:
+        '200':
+          description: 修改成功
+        '410':
+          description: 找不到修改的目标
+        '405':
+          description: 请求的权限不够
+        '400':
+          description: 请求格式错误
+        '401':
+          description: 请求需要登录
+
+    delete:
+      tags:
+        - 留言板
+      security:
+        - cookieAuth: [User,Admin]
+      description: 删除一条留言，用户只能删除自己的留言
+      parameters:
+        - in: path
+          name: appid
+          description: 待删除留言所在的预约编号
+          schema:
+            $ref: '#/components/schemas/Appointment_get/properties/appid'
+          required: true
+        - in: path
+          name: mesid
+          description: 待删除留言的全局统一编号
+          schema:
+            $ref: '#/components/schemas/Message_board/items/properties/mesid'
+          required: true 
+      responses:
+        '204':
+          description: 删除成功
+          content:
+            text/plain:
+              schema:
+                type: string
+              example: success delete.
+        '410':
+          description: 找不到删除的目标
+        '405':
+          description: 请求的权限不够
+        '400':
+          description: 请求格式错误
+        '401':
+          description: 请求需要登录
 
 components:
   schemas:
@@ -401,7 +600,46 @@ components:
           type: string
           example: '2018XXXX'
 
+    Message_board:
+      type: array
+      items:
+        type: object
+        properties:
+          mesid:
+            type: string
+            description: 当前留言在全部留言中的编号，也是留言的唯一id
+            example: '22d4e5s2df1-sdf15ef-sdfse5df'
+          appid:
+            type: string
+            description: 留言的预约编号
+            example: 2018XXXX
+          userid:
+            type: string
+            description: 留言用户id
+            example: 2018XXXX
+          content:
+            type: string
+            description: 留言板内容
+            example: 最喜欢姐姐大人了
+          time:
+            type: string
+            format: jsontime
+            description: 留言发布时间
+            example: '2019-08-12T07:05:28.826Z'
 
+
+  responses:
+    '200':
+      description: 请求成功，修改成功。
+    '401':
+      description: 请求的权限需要登录
+    '405':
+      description: 请求所需权限不够
+    '410':
+      description: 找不到修改的目标
+    '400':
+      description: 请求格式错误
+      
         
 
           
