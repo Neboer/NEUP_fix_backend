@@ -13,6 +13,18 @@
 </label>
 </body>
 <script>
+    function patchOneAnn(id, data) {
+        let pat = new XMLHttpRequest();
+        pat.open("PATCH", "http://localhost:8080/announcement/" + id);
+        pat.onreadystatechange = function () {
+            if (pat.readyState === XMLHttpRequest.DONE) {
+                init();
+            }
+        };
+        pat.setRequestHeader("Content-Type", "application/json");
+        pat.send(data)
+    }
+
     let init = function () {
         let bind = document.getElementsByTagName("div")[0];
         bind.innerHTML = "";
@@ -22,7 +34,8 @@
             if (req.readyState === XMLHttpRequest.DONE) {
                 let piece = JSON.parse(req.responseText);
                 for (let i = 0; i < piece.length; i++) {
-                    bind.innerHTML += "<li>" + JSON.stringify(piece[i]) + "<button onclick='deleteOneAnn(\"" + piece[i].annid + "\")'>delete</button></li>"
+                    bind.innerHTML += "<li id='" + i.toString() + "'>" + JSON.stringify(piece[i]) +
+                        "<button onclick='deleteOneAnn(\"" + piece[i].annid + "\")'>delete</button><button onclick='" + "patchOneAnn(\"" + piece[i].annid + "\"," + JSON.stringify({text: new Date().toJSON()}) + ")" + "'>update</button> </li>";
                 }
             }
         };
@@ -51,10 +64,7 @@
         ins.setRequestHeader("Content-Type", "application/json");
         ins.send(JSON.stringify({text: text, image: image}));
     }
-    function patchOneAnn(id,data){
-        let pat = new XMLHttpRequest();
 
-    }
 
     window.onload = function () {
         init();

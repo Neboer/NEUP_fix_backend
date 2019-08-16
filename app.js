@@ -45,13 +45,15 @@ client.connect().then((Client) => {
         });
     });
     app.patch('/announcement/:annid', validate({body: announcement_update_body}), (req, res) => {
-        console.log(req.body);
         announcement.updateOne({"_id": ObjectID(req.params.annid)}, {$set: req.body}).then((result) => {
-            console.log(result)
+            if (result.result.nModified === 1){
+                res.status(200).end("update successful")
+            } else {
+                res.status(410).end("target not found")
+            }
         })
     });
     app.use((err, req, res, next) => {
-        console.log(req.body);
         if (err instanceof ValidationError) {
             // At this point you can execute your error handling code
             res.status(400).send('invalid request data.');
