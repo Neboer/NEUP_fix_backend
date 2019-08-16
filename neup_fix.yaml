@@ -10,7 +10,7 @@ paths:
     get:
       tags:
         - 公告
-      description: 返回所有公告组成的列表
+      description: 返回所有公告组成的列表。注意，公告只能一次性全部取得。公告包含最多一张图片和一些文字。
       operationId: getAnnouncement
       responses:
         '200':
@@ -24,7 +24,13 @@ paths:
                   properties:
                     annid:
                       type: string
+                      description: 公告的统一编号
                       example: "SASI12d4s5e6dfsd2"
+                    anntime:
+                      type: string
+                      description: 公告的发布时间
+                      format: jsontime
+                      example: 2019-08-12T07:05:28.826Z
                     text:
                       type: string
                       example: "Only my railgun!"
@@ -40,7 +46,7 @@ paths:
       operationId: addAnnouncement
       description: 增加一条公告
       requestBody:
-        description: 增加的公告内容
+        description: 增加的公告内容，可以仅有文字
         content:
           application/json:
             schema:
@@ -51,10 +57,47 @@ paths:
                 image:
                   type: string
               required: 
-                [text,image]
+                [text]
       responses:
         '200':
           description: 提交成功
+        '400':
+          description: 请求格式错误
+        '401':
+          description: 请求需要登录
+        '405':
+          description: 请求所需权限不够
+  /announcement/{annid}:
+    patch:
+      tags:
+        - 公告
+      security:
+        - cookieAuth: [Admin]
+      parameters:
+        - in: path
+          name: annid
+          required: true
+          description: 要更新的公告的编号
+          schema:
+            type: string
+      requestBody:
+        description: 在二者中选择至少一个属性进行修改
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                text:
+                  type: string
+                  example:
+                    onee-sama!!
+                image:
+                  type: string
+                  format: url
+                  example: "https://camo.githubusercontent.com/0a418b2480838f49dd7225e1f29df77753a8ab96/687474703a2f2f67657477616c6c7061706572732e636f6d2f77616c6c70617065722f66756c6c2f302f652f332f3932333239332d6e65772d656d696c792d7468652d737472616e67652d77616c6c70617065722d3236373678313434302e6a7067"
+      responses:
+        '200':
+          description: 修改成功
         '400':
           description: 请求格式错误
         '401':
@@ -68,8 +111,9 @@ paths:
       - cookieAuth: [Admin]
       description: 删除一个公告
       parameters: 
-      - in: query
-        name: appid
+      - in: path
+        name: annid
+        description: 待删除公告的annid
         schema:
           type: string
           example: "sddf1edf-asde54f5e2d-assssdf"

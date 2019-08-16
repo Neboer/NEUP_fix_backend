@@ -1,16 +1,17 @@
 export let announcement_post_body = {
-    "type":"object",
-    "properties":{
-        "text":{"type":"string"},
-        "image":{"type":"string"}
+    "type": "object",
+    "properties": {
+        "text": {"type": "string"},
+        "image": {"type": "string"}
     },
-    "required":["text","image"]
+    "required": ["text"]
 };
 
-export let announcement_delete_query = {
-    "type":"object",
-    "properties":{
-        "appid":{"type":"string"}
-    },
-    "required":["appid"]
+export let announcement_update_body = {
+    "type": "object",
+    // "minProperties": 1,
+    "properties": {
+        "text": {"type": "string"},
+        "image": {"type": "string"}
+    }
 };

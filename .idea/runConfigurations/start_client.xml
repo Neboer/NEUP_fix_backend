@@ -1,0 +1,8 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="start client" type="NodeJSConfigurationType" application-parameters="-d -1 -p 9000 ." path-to-js-file="$USER_HOME$/.yarn/bin/http-server" working-dir="$PROJECT_DIR$/client-example">
+    <EXTENSION ID="com.jetbrains.nodejs.run.NodeJSStartBrowserRunConfigurationExtension">
+      <browser name="98ca6316-2f89-46d9-a9e5-fa9e2b0625b3" start="true" url="http://localhost:9000" />
+    </EXTENSION>
+    <method v="2" />
+  </configuration>
+</component>

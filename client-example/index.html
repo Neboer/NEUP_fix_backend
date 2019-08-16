@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <title>NEUP-client-example</title>
+</head>
+<body>
+<div>hello!</div>
+<label>
+    text: <input placeholder="what?" class="input_text"/>
+    image: <input placeholder="what?" class="input_image"/>
+    <button id="insert_button">insert one</button>
+</label>
+</body>
+<script>
+    let init = function () {
+        let bind = document.getElementsByTagName("div")[0];
+        bind.innerHTML = "";
+        let req = new XMLHttpRequest();
+        req.open("get", "http://localhost:8080/announcement");
+        req.onreadystatechange = function () {
+            if (req.readyState === XMLHttpRequest.DONE) {
+                let piece = JSON.parse(req.responseText);
+                for (let i = 0; i < piece.length; i++) {
+                    bind.innerHTML += "<li>" + JSON.stringify(piece[i]) + "<button onclick='deleteOneAnn(\"" + piece[i].annid + "\")'>delete</button></li>"
+                }
+            }
+        };
+        req.send()
+    };
+
+    function deleteOneAnn(id) {
+        let dele = new XMLHttpRequest();
+        dele.open("delete", "http://localhost:8080/announcement/" + id);
+        dele.onreadystatechange = function () {
+            if (dele.readyState === XMLHttpRequest.DONE) {
+                init();
+            }
+        };
+        dele.send()
+    }
+
+    function insertOneAnn(text, image) {
+        let ins = new XMLHttpRequest();
+        ins.open("post", "http://localhost:8080/announcement");
+        ins.onreadystatechange = function () {
+            if (ins.readyState === XMLHttpRequest.DONE) {
+                init();
+            }
+        };
+        ins.setRequestHeader("Content-Type", "application/json");
+        ins.send(JSON.stringify({text: text, image: image}));
+    }
+    function patchOneAnn(id,data){
+        let pat = new XMLHttpRequest();
+
+    }
+
+    window.onload = function () {
+        init();
+        document.getElementById("insert_button").onclick = function () {
+            insertOneAnn(document.getElementsByClassName("input_text")[0].value, document.getElementsByClassName("input_image")[0].value);
+        }
+    }
+
+</script>
+</html>
