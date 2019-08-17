@@ -3,7 +3,7 @@ import express from 'express';
 import {MongoClient, ObjectID} from 'mongodb';
 import bodyParser from "body-parser";
 import {Validator, ValidationError} from 'express-json-validator-middleware'
-import {announcement_post_body, announcement_update_body, userId_get_query, userId_put_body} from './validate_schema'
+import schema from './validate_schema'
 
 const mongo_url = 'mongodb://localhost:27017';
 const mongo_dbname = 'NEUP_fix';
@@ -13,6 +13,7 @@ const validator = new Validator({allErrors: true});
 
 const validate = validator.validate;
 app.use(bodyParser.json());
+app.use("/", express.static("client-example"));
 const client = new MongoClient(mongo_url, {useNewUrlParser: true});
 
 client.connect().then((Client) => {
@@ -27,7 +28,7 @@ client.connect().then((Client) => {
             res.json(pass_result);
         }))
     });
-    app.post('/announcement', validate({body: announcement_post_body}), ((req, res) => {
+    app.post('/announcement', validate({body: schema.announcement_post_body}), ((req, res) => {
         announcement.insertOne(req.body).catch((reason => {
             throw reason;
         }));// TODO: add result judgement.加一个萌萌哒夹击妹抖
@@ -44,7 +45,7 @@ client.connect().then((Client) => {
             throw reason
         });
     });
-    app.patch('/announcement/:annid', validate({body: announcement_update_body}), (req, res) => {
+    app.patch('/announcement/:annid', validate({body: schema.announcement_update_body}), (req, res) => {
         announcement.updateOne({"_id": ObjectID(req.params.annid)}, {$set: req.body}).then((result) => {
             if (result.result.nModified === 1) {
                 res.status(200).end("update successful")
@@ -54,7 +55,7 @@ client.connect().then((Client) => {
         })
     });
 
-    app.get('/user', validate({query: userId_get_query}), (req, res) => {
+    app.get('/user', validate({query: schema.userId_get_query}), (req, res) => {
         user_info.find({userid: req.query.userid}).toArray((error, result) => {
             if (result.length === 0) {
                 res.status(410).end('no such user.')
@@ -73,15 +74,16 @@ client.connect().then((Client) => {
 
         })
     });
-    app.put('/user', validate({query: userId_get_query,body: userId_put_body}), (req, res) => {
-        user_info.updateOne({userid:req.query.userid},{$set: req.body}).then((result) => {
-            if(result.result.nModified === 1){
+    app.put('/user', validate({query: schema.userId_get_query, body: schema.userId_put_body}), (req, res) => {
+        user_info.updateOne({userid: req.query.userid}, {$set: req.body}).then((result) => {
+            if (result.result.nModified === 1) {
                 res.status(200).end("update successful.")
             } else {
                 res.status(410).end('no such user')
             }
         })
     });
+    // app.get()
     app.use((err, req, res, next) => {
         if (err instanceof ValidationError) {
             // At this point you can execute your error handling code
