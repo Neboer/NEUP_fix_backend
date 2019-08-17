@@ -148,10 +148,10 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/UserInfo'
-        '410':
-          description: 找不到删除的目标
         '400':
           description: 请求格式错误
+        '410':
+          description: 找不到请求的目标
     put:
       description: 修改一个用户的信息，只有用户自己和管理员有权限修改。
       security: 

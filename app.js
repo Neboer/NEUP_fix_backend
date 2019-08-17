@@ -3,7 +3,7 @@ import express from 'express';
 import {MongoClient, ObjectID} from 'mongodb';
 import bodyParser from "body-parser";
 import {Validator, ValidationError} from 'express-json-validator-middleware'
-import {announcement_post_body, announcement_update_body} from './validate_schema'
+import {announcement_post_body, announcement_update_body, userId_get_query, userId_put_body} from './validate_schema'
 
 const mongo_url = 'mongodb://localhost:27017';
 const mongo_dbname = 'NEUP_fix';
@@ -46,10 +46,39 @@ client.connect().then((Client) => {
     });
     app.patch('/announcement/:annid', validate({body: announcement_update_body}), (req, res) => {
         announcement.updateOne({"_id": ObjectID(req.params.annid)}, {$set: req.body}).then((result) => {
-            if (result.result.nModified === 1){
+            if (result.result.nModified === 1) {
                 res.status(200).end("update successful")
             } else {
                 res.status(410).end("target not found")
+            }
+        })
+    });
+
+    app.get('/user', validate({query: userId_get_query}), (req, res) => {
+        user_info.find({userid: req.query.userid}).toArray((error, result) => {
+            if (result.length === 0) {
+                res.status(410).end('no such user.')
+            } else {
+                let data_wait_for_send = [];
+                for (let item of result) {
+                    data_wait_for_send.push({
+                        userid: item.userid,
+                        name: item.name,
+                        avatar: item.avatar,
+                        signature: item.signature
+                    })
+                }
+                res.json(data_wait_for_send);
+            }
+
+        })
+    });
+    app.put('/user', validate({query: userId_get_query,body: userId_put_body}), (req, res) => {
+        user_info.updateOne({userid:req.query.userid},{$set: req.body}).then((result) => {
+            if(result.result.nModified === 1){
+                res.status(200).end("update successful.")
+            } else {
+                res.status(410).end('no such user')
             }
         })
     });

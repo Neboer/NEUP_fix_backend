@@ -11,6 +11,10 @@
     image: <input placeholder="what?" class="input_image"/>
     <button id="insert_button">insert one</button>
 </label>
+<div>
+    update_text: <input placeholder="text?" class="update_text"/>
+    update_image:<input placeholder="image?" class="update_image"/>
+</div>
 </body>
 <script>
     function patchOneAnn(id, data) {
@@ -22,7 +26,7 @@
             }
         };
         pat.setRequestHeader("Content-Type", "application/json");
-        pat.send(data)
+        pat.send(JSON.stringify(data))
     }
 
     let init = function () {
@@ -34,8 +38,25 @@
             if (req.readyState === XMLHttpRequest.DONE) {
                 let piece = JSON.parse(req.responseText);
                 for (let i = 0; i < piece.length; i++) {
+                    let update_function = function () {
+                        let update_text = document.getElementsByClassName("update_text")[0].value;
+                        let update_image = document.getElementsByClassName("update_image")[0].value;
+                        let update_message = {};
+                        if (update_text !== "") {
+                            update_message.text = update_text;
+                        }
+                        if (update_image !== "") {
+                            update_message.image = update_image;
+                        }
+                        patchOneAnn(piece[i].annid, update_message)
+                    };
+                    let update_button = document.createElement("button");
+                    update_button.onclick = update_function;
+                    console.log(update_button.onclick);
+                    update_button.innerHTML = "update";
                     bind.innerHTML += "<li id='" + i.toString() + "'>" + JSON.stringify(piece[i]) +
-                        "<button onclick='deleteOneAnn(\"" + piece[i].annid + "\")'>delete</button><button onclick='" + "patchOneAnn(\"" + piece[i].annid + "\"," + JSON.stringify({text: new Date().toJSON()}) + ")" + "'>update</button> </li>";
+                        "<button onclick='deleteOneAnn(\"" + piece[i].annid + "\")'>delete</button>";
+                    bind.appendChild(update_button);
                 }
             }
         };
