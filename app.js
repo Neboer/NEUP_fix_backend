@@ -14,12 +14,13 @@ const validator = new Validator({allErrors: true});
 const validate = validator.validate;
 app.use(bodyParser.json());
 app.use("/", express.static("client-example"));
+console.debug("静态文件服务器已启动");
 const client = new MongoClient(mongo_url, {useNewUrlParser: true});
-
 client.connect().then((Client) => {
     const NEUP_fix = Client.db(mongo_dbname);
-    const announcement = NEUP_fix.collection("announcement");
-    const user_info = NEUP_fix.collection("user_info");
+    const announcement = NEUP_fix.collection("announcement");// 公告表
+    const user_info = NEUP_fix.collection("user_info");// 用户信息表
+    const appointment = NEUP_fix.collection("appointment");// 所有的预约
     app.get('/announcement', (req, res) => {
         announcement.find({}).toArray(((error, result) => {
             let pass_result = result.map((single_ann) => {
@@ -87,7 +88,15 @@ client.connect().then((Client) => {
             }
         })
     });
-    // app.get('/app');
+    app.get('/app', validate({query: schema.app_get_query}), (req, res) => {
+        appointment.find(req.query).toArray((error, result) => {
+            let find_result = result.map((one_appointment) => {
+                delete one_appointment._id;
+                return one_appointment;
+            });
+            res.json(find_result);
+        })
+    });
     app.use((err, req, res, next) => {
         if (err instanceof ValidationError) {
             // At this point you can execute your error handling code
@@ -95,6 +104,8 @@ client.connect().then((Client) => {
             next();
         } else next(err); // pass error on if not a validation error
     });
+}).then(() => {
+    console.debug("数据库连接成功，服务器已经启动。");
 });
 
 app.listen(8080);

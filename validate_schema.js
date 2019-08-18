@@ -35,8 +35,22 @@ let schema = {
         required: ["name", "avatar", "signature"],
         additionalProperties: false
     },
-    app_get_query:{
-
+    // 这个是查询符合条件的预约所用到的查询参数json
+    app_get_query: {
+        type: "object",
+        properties: {
+            appid: {type: "string"},
+            status: {
+                type: "string",
+                enum: ["submitted", "successful", "failed", "canceled"]
+            },
+            userid: {type: "string"},
+            app_make_time:{type:"string"},
+            repair:{type:"string"},
+            device_type:{type:"string"},
+            device_model:{type:"string"}
+        },
+        additionalProperties: false
     }
 };
 export default schema;
