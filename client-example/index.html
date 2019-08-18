@@ -38,30 +38,33 @@
             if (req.readyState === XMLHttpRequest.DONE) {
                 let piece = JSON.parse(req.responseText);
                 for (let i = 0; i < piece.length; i++) {
-                    let update_function = function () {
-                        let update_text = document.getElementsByClassName("update_text")[0].value;
-                        let update_image = document.getElementsByClassName("update_image")[0].value;
-                        let update_message = {};
-                        if (update_text !== "") {
-                            update_message.text = update_text;
-                        }
-                        if (update_image !== "") {
-                            update_message.image = update_image;
-                        }
-                        patchOneAnn(piece[i].annid, update_message)
-                    };
-                    let update_button = document.createElement("button");
-                    update_button.onclick = update_function;
-                    console.log(update_button.onclick);
-                    update_button.innerHTML = "update";
+                    // let update_button = document.createElement("button");
+                    // update_button.onclick = update_function;
+                    // console.log(update_button.onclick);
+                    // update_button.innerHTML = "update";
                     bind.innerHTML += "<li id='" + i.toString() + "'>" + JSON.stringify(piece[i]) +
-                        "<button onclick='deleteOneAnn(\"" + piece[i].annid + "\")'>delete</button>";
-                    bind.appendChild(update_button);
+                        "<button onclick='deleteOneAnn(\"" + piece[i].annid + "\")'>delete</button>"+
+                        "<button onclick='update_function(\"" + piece[i].annid + "\")'>update</button>"+
+                        "</li>";
+                    // bind.appendChild(update_button);
                 }
             }
         };
         req.send()
     };
+    function update_function(id) {
+        let update_text = document.getElementsByClassName("update_text")[0].value;
+        let update_image = document.getElementsByClassName("update_image")[0].value;
+        let update_message = {};
+        if (update_text !== "") {
+            update_message.text = update_text;
+        }
+        if (update_image !== "") {
+            update_message.image = update_image;
+        }
+        patchOneAnn(id, update_message);//piece[i].annid
+        console.log("update");
+    }
 
     function deleteOneAnn(id) {
         let dele = new XMLHttpRequest();

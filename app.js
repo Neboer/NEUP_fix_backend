@@ -48,9 +48,11 @@ client.connect().then((Client) => {
     app.patch('/announcement/:annid', validate({body: schema.announcement_update_body}), (req, res) => {
         announcement.updateOne({"_id": ObjectID(req.params.annid)}, {$set: req.body}).then((result) => {
             if (result.result.nModified === 1) {
-                res.status(200).end("update successful")
+                res.status(200).end("update successful.")
+            } else if (result.result.n === 1) {
+                res.status(200).end("no update performed");
             } else {
-                res.status(410).end("target not found")
+                res.status(410).end('no such announcement')
             }
         })
     });
@@ -78,12 +80,14 @@ client.connect().then((Client) => {
         user_info.updateOne({userid: req.query.userid}, {$set: req.body}).then((result) => {
             if (result.result.nModified === 1) {
                 res.status(200).end("update successful.")
+            } else if (result.result.n === 1) {
+                res.status(200).end("no update performed");
             } else {
                 res.status(410).end('no such user')
             }
         })
     });
-    // app.get()
+    // app.get('/app');
     app.use((err, req, res, next) => {
         if (err instanceof ValidationError) {
             // At this point you can execute your error handling code
