@@ -4,7 +4,7 @@ openapi: 3.0.0
 info:
   version: "1.0.0"
   title: 先锋硬件维修系统后端
-  description: NEUP_fix后端文档
+  description: NEUP_fix后端文档，所有时间字符串统一采用ISO格式，schema中以date-time标出。
 paths:
   /announcement:
     get:
@@ -29,7 +29,7 @@ paths:
                     anntime:
                       type: string
                       description: 公告的发布时间
-                      format: jsontime
+                      format: 'date-time'
                       example: 2019-08-12T07:05:28.826Z
                     text:
                       type: string
@@ -184,7 +184,7 @@ paths:
     get:
       tags: 
       - 维修预约
-      description: 查询所有符合条件的预约并返回
+      description: 查询所有符合条件的预约并返回简要信息列表。
       parameters: 
       - in: query
         name: appid
@@ -265,7 +265,7 @@ paths:
         - in: path
           name: appid
           schema:
-            type: string
+            $ref: '#/components/schemas/Appointment_get/properties/appid'
           description: 预约的编号          
           required: true
       responses:
@@ -288,12 +288,11 @@ paths:
         - 维修预约
       security:
         - cookieAuth: [Admin]
-      
       parameters:
         - in: path
           name: appid
           schema:
-            type: string
+            $ref: '#/components/schemas/Appointment_get/properties/appid'
           description: 预约的编号          
           required: true
       requestBody:
@@ -304,7 +303,13 @@ paths:
               description: 在可以修改的四种属性里任选一种进行修改
               properties:
                 status:
-                  $ref: '#/components/schemas/Appointment_get/properties/status'
+                  type: string
+                  description: 预约状态，当然，不能修改成“已提交”。
+                  enum:
+                    - accepted
+                    - successful
+                    - failed
+                    - canceled
                 app_exec_time:
                   $ref: '#/components/schemas/Appointment_detail/properties/app_exec_time'
                 member:
@@ -316,6 +321,8 @@ paths:
           description: 请求成功，修改成功。
         '401':
           description: 请求的权限需要登录
+        '402':
+          description: 请求的预约已经维修结束，不应该再更新状态。
         '405':
           description: 请求所需权限不够
         '410':
@@ -329,7 +336,7 @@ paths:
         - in: path
           name: appid
           schema:
-            type: string
+            $ref: '#/components/schemas/Appointment_get/properties/appid'
           description: 预约的编号          
           required: true
       security:
@@ -355,13 +362,20 @@ paths:
         - in: path
           name: appid
           schema:
-            type: string
-          description: 预约的编号          
+            $ref: '#/components/schemas/Appointment_get/properties/appid'
+          description: 预约的编号
           required: true
       tags:
         - 维修预约
       security:
         - cookieAuth: [User, Admin]
+      requestBody:
+        content:
+          text/plain:
+            schema:
+              type: string
+              description: 删除的理由
+              example: 乐意，就不修了。
       responses:
         '204':
           description: 删除成功
@@ -379,7 +393,7 @@ paths:
       parameters:
         - in: path
           name: appid
-          description: 查询指定预约编号下的所有留言信息。
+          description: 查询指定预约编号下的所有留言信息。注意，未登录的游客或其他用户虽然不能看到预约的细节，但所有人都可以访问任意预约的留言板内容。
           schema:
             $ref: '#/components/schemas/Appointment_get/properties/appid'
           required: true
@@ -514,17 +528,19 @@ components:
       type: object
       properties:
         appid:
-          type: string
+          type: integer
           description: 预约的编号
-          example: 012
+          example: 12
         status:
           type: string
           description: 预约状态
-          enum: 
+          enum:
           - submitted
+          - accepted
           - successful
           - failed
           - canceled
+#        注意，接下来的userid和app_make_time都是history的一部分。3
         userid:
           type: string
           description: 提交预约用户的id
@@ -532,7 +548,7 @@ components:
         app_make_time:
           description: 预约信息的发布时间
           type: string
-          format: jsontime
+          format: 'date-time'
         repair:
           type: string
           description: 维修的类型
@@ -584,21 +600,56 @@ components:
           $ref: '#/components/schemas/Appointment_get/properties/appid'
         status:
           $ref: '#/components/schemas/Appointment_get/properties/status'
-        userid:
-          $ref: '#/components/schemas/Appointment_get/properties/userid'
-        app_make_time:
-          $ref: '#/components/schemas/Appointment_get/properties/app_make_time'
+        history:
+          description: 每个状态变更的历史记录。
+          type: array
+          items:
+            type: object
+            properties:
+              status:
+                description: 变更后的状态。用户提交以后，会有一个提交的初始状态
+                type: string
+                enum:
+                  - submitted
+                  - accepted
+                  - successful
+                  - failed
+                  - canceled
+                example: 'submitted'
+              userid:
+                description: 变更状态的人的id，如果只有一个，那就是提交预约的人。
+                type: string # 用户id都是字符串
+                example: 20183XXX
+              time:
+                description: 变更状态的时间
+                type: string
+                format: 'date-time'
+              cancel_reason:
+                description: 取消原因。只有当数组中一项的status为canceled时，才会同时具有该条属性。
+                type: string
+                example: 这个问题太严重，我们缺少专业的设备，无法维修。
+
+                
+#        我们不要什么创建时间和创建人了，我们只需要history就可以了。
+#        userid:
+#          $ref: '#/components/schemas/Appointment_get/properties/userid'
+#        app_make_time:
+#          $ref: '#/components/schemas/Appointment_get/properties/app_make_time'
         repair:
           $ref: '#/components/schemas/Appointment_get/properties/repair'
         device_type:
           $ref: '#/components/schemas/Appointment_get/properties/device_type'
         device_model:
           $ref: '#/components/schemas/Appointment_get/properties/device_model'
-        status_change_time:
-          description: 状态变更时间
-          type: string
-          format: jsontime
-          example: '2019-08-12T07:05:28.826Z'
+#        status_change_time:
+#          description: 状态变更时间
+#          type: string
+#          format: 'date-time'
+#          example: '2019-08-12T07:05:28.826Z'
+#        status_change_user_userid:
+#          description: 修改预约状态的人员id
+#          type: string
+#          example: 2018XXXX
         describe:
           $ref: '#/components/schemas/Appointment_post/properties/describe'
         contact:
@@ -608,27 +659,27 @@ components:
         app_exec_time:
           description: 预约好的维修时间
           type: string
-          format: jsontime
+          format: 'date-time'
           example: '2019-08-12T07:05:28.826Z'
         member:
-          description: 安排的维修人员
+          description: 安排的维修人员，注意这个仅仅是字符串，并不是数组。
           type: string
           example: '炮姐，黑子'
         site:
           $ref: '#/components/schemas/Appointment_post/properties/site'
-        cancel_time:
-          description: 取消这个预约的时间，仅当一个预约被取消时才为非空
-          type: string
-          format: jsontime 或 空串
-          example: ''
         cancel_reason:
           description: 取消此预约的原因
           type: string
           example: '爷乐意'
-        cancel_user:
-          description: 取消此预约的用户id
-          type: string
-          example: '2018XXXX'
+#        cancel_time:
+#          description: 取消这个预约的时间，仅当一个预约被取消时才为非空
+#          type: string
+#          format: 'date-time'
+#          example: null
+#        cancel_user:
+#          description: 取消此预约的用户id
+#          type: string
+#          example: '2018XXXX'
 
     Message_board:
       type: array
@@ -636,13 +687,13 @@ components:
         type: object
         properties:
           mesid:
-            type: string
+            type: integer
             description: 当前留言在全部留言中的编号，也是留言的唯一id
-            example: '22d4e5s2df1-sdf15ef-sdfse5df'
+            example: 25
           appid:
-            type: string
+            type: integer
             description: 留言的预约编号
-            example: 2018XXXX
+            example: 12
           userid:
             type: string
             description: 留言用户id
@@ -653,7 +704,7 @@ components:
             example: 最喜欢姐姐大人了
           time:
             type: string
-            format: jsontime
+            format: 'date-time'
             description: 留言发布时间
             example: '2019-08-12T07:05:28.826Z'
 
