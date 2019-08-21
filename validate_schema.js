@@ -45,7 +45,7 @@ let schema = {
                 enum: ["submitted", "successful", "failed", "canceled"]
             },
             userid: {type: "string"},
-            app_make_time: {type: "string", format:"date-time"},
+            app_make_time: {type: "string", format: "date-time"},
             repair: {type: "string"},
             device_type: {type: "string"},
             device_model: {type: "string"}
@@ -57,7 +57,6 @@ let schema = {
     app_post_body: {
         type: "object",
         properties: {
-            userid: {type: "string"},
             device_type: {type: "string"},
             device_model: {type: "string"},
             repair: {type: "string"},
@@ -71,28 +70,36 @@ let schema = {
                 }],
                 additionalItems: false
             },
-            contact_time:{type:"string"},
-            site:{type:"string"}
+            contact_time: {type: "string"},
+            site: {type: "string"}
         },
-        additionalProperties:false
+        additionalProperties: false
     },
 
     // 修改预约属性
     app_update_body: {
         type: "object",
-        properties:{
+        properties: {
             status: {
                 type: "string",
                 enum: ["successful", "failed", "accepted"]
             },
-            app_exec_time:{
+            app_exec_time: {
                 type: "string",
                 format: "date-time"
             },
-            member:{type:"string"},
-            site:{type:"string"}
+            member: {type: "string"},
+            site: {type: "string"}
         },
-        additionalProperties:false
+        additionalProperties: false
+    },
+
+    //删除预约时提交的删除理由
+    app_delete_body: {
+        type: "object",
+        properties: {
+            reason: {type: "string"}
+        }
     }
 };
 export default schema;

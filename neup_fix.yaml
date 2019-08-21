@@ -371,11 +371,14 @@ paths:
         - cookieAuth: [User, Admin]
       requestBody:
         content:
-          text/plain:
+          application/json:
             schema:
-              type: string
-              description: 删除的理由
-              example: 乐意，就不修了。
+              type: object
+              properties:
+                reason:
+                  type: string
+                  example:
+                    "维修人员这两天有事，暂时不能修了，还望见谅"
       responses:
         '204':
           description: 删除成功
@@ -562,11 +565,9 @@ components:
           description: 设备型号
           example: "DELL G3-3579"
 
-    Appointment_post:
+    Appointment_post: # 这块沙雕了，post请求的时候不用带上用户id，应该根据cookie来推算。
       type: object
       properties:
-        userid:
-          $ref: '#/components/schemas/Appointment_get/properties/userid'
         device_type:
           $ref: '#/components/schemas/Appointment_get/properties/device_type'
         device_model:
@@ -607,7 +608,7 @@ components:
             type: object
             properties:
               status:
-                description: 变更后的状态。用户提交以后，会有一个提交的初始状态
+                description: 变更后的状态。用户提交以后，会有一个提交的初始状态。注意这里的status还会在history的末尾再出现一次。
                 type: string
                 enum:
                   - submitted
@@ -627,29 +628,15 @@ components:
               cancel_reason:
                 description: 取消原因。只有当数组中一项的status为canceled时，才会同时具有该条属性。
                 type: string
-                example: 这个问题太严重，我们缺少专业的设备，无法维修。
-
-                
+                required: false
+                example: 这个问题太严重，我们缺少专业的设备，无法维修。（只有当数组中一项的status为canceled时，才会同时具有该条属性。）
 #        我们不要什么创建时间和创建人了，我们只需要history就可以了。
-#        userid:
-#          $ref: '#/components/schemas/Appointment_get/properties/userid'
-#        app_make_time:
-#          $ref: '#/components/schemas/Appointment_get/properties/app_make_time'
         repair:
           $ref: '#/components/schemas/Appointment_get/properties/repair'
         device_type:
           $ref: '#/components/schemas/Appointment_get/properties/device_type'
         device_model:
           $ref: '#/components/schemas/Appointment_get/properties/device_model'
-#        status_change_time:
-#          description: 状态变更时间
-#          type: string
-#          format: 'date-time'
-#          example: '2019-08-12T07:05:28.826Z'
-#        status_change_user_userid:
-#          description: 修改预约状态的人员id
-#          type: string
-#          example: 2018XXXX
         describe:
           $ref: '#/components/schemas/Appointment_post/properties/describe'
         contact:
@@ -667,19 +654,6 @@ components:
           example: '炮姐，黑子'
         site:
           $ref: '#/components/schemas/Appointment_post/properties/site'
-        cancel_reason:
-          description: 取消此预约的原因
-          type: string
-          example: '爷乐意'
-#        cancel_time:
-#          description: 取消这个预约的时间，仅当一个预约被取消时才为非空
-#          type: string
-#          format: 'date-time'
-#          example: null
-#        cancel_user:
-#          description: 取消此预约的用户id
-#          type: string
-#          example: '2018XXXX'
 
     Message_board:
       type: array

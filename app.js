@@ -102,7 +102,7 @@ client.connect().then((Client) => {
                 return {
                     appid: one_appointment.appid,
                     status: one_appointment.status,
-                    userid: one_appointment.userid,
+                    userid: one_appointment.history[0].userid,
                     app_make_time: one_appointment.app_make_time,
                     repair: one_appointment.repair,
                     device_type: one_appointment.device_type,
@@ -115,13 +115,13 @@ client.connect().then((Client) => {
 
     app.post('/app', validate({body: schema.app_post_body}), ((req, res) => {
         let insert_data = req.body;
-        insert_data.appid = 2; // 自增运算！
+        insert_data.appid = 2; // TODO: 自增运算！
         insert_data.status = "submitted";
         insert_data.app_exec_time = null;
         insert_data.member = null;// submitted状态下，还没有安排维修人员。
         insert_data.history = [{
             status: "submitted",
-            userid: "2018XXXX",
+            userid: "2018XXXX",// TODO: 根据cookie解析。
             time: new Date()
         }];
         insert_data.mesid_list = [];// 留言板id列表。这个作用非常明确，绑定每个预约和对应的留言板id。留言板不用一并发送给客户端，客户端需要访问/
@@ -149,38 +149,78 @@ client.connect().then((Client) => {
                 res.status(410).end("no such appointment");
             }
             // 只有已提交或已接受的记录才可以更新。为了便于理解，我们把状态分为三类“已提交”、“已接受”和“已结束”。状态只能向前更新。
-            if (result[0].status)
-            if (result[0].status !== "submitted" && result[0].status !== "accepted") {
+            let current_status = result[0].status;
+            let update_status = req.body.status;
+            if (current_status !== "submitted" && current_status !== "accepted") {
                 res.status(402).end("cannot update a terminated appointment");
+            } else if (current_status === "accepted" && update_status === "submitted") {
+                res.status(402).end("cannot update a accepted appointment to updated status")
+            } else if (current_status === update_status) {
+                res.status(402).end("no update provided")
+            } else {// 校验成功，可以美琴
+                appointment.updateOne({appid: req.query.appid}, {
+                    $set: req.body, $push: {
+                        history: {
+                            status: update_status,
+                            userid: "2018XXXX", // 这个userid要和未来的cookie校验一致。
+                            time: (new Date())
+                        }
+                    }
+                }).then((result) => {
+                    if (result.result.nModified === 1) {
+                        res.status(200).end("update successful.")
+                    }
+                });
             }
-            if (result[0].status === "accepted")
         }));
-        appointment.updateOne({appid: req.query.appid}, {$set: req.body}).then((result) => {
-            if (result.result.nModified === 1) {
-                res.status(200).end("update successful.")
-            } else if (result.result.n === 1) {
-                res.status(200).end("no update performed");
-            }
-        });
     });
 
     app.put('/app/:appid', validate({body: schema.app_post_body}), (req, res) => {
-        appointment.updateOne({appid: req.query.appid}, {$set: req.body}).then((result) => {
-            if (result.result.nModified === 1) {
-                res.status(200).end("update successful.")
-            } else if (result.result.n === 1) {
-                res.status(200).end("no update performed");
+        appointment.find({appid: req.params.appid}).toArray((error, result) => {
+            let current_status = result[0].status;
+            if (current_status !== "submitted") {
+                res.status(402).end("cannot update an accepted or terminated appointment")
             } else {
-                res.status(410).end('no such appointment')
+                appointment.updateOne({appid: req.query.appid}, {$set: req.body}).then((result) => {
+                    if (result.result.nModified === 1) {
+                        res.status(200).end("update successful.")
+                    } else if (result.result.n === 1) {
+                        res.status(200).end("no update performed");
+                    } else {
+                        res.status(410).end('no such appointment')
+                    }
+                })
             }
-        })
+        });
+
     });
 
-    app.delete('/app/:appid', (req, res) => {
-        appointment.updateOne({appid: req.query.appid}, {
-            $set: {}
-        })
-    })
+    app.delete('/app/:appid', validate({body: schema.app_delete_body}), (req, res) => {// 本来打算使用text，但是鉴于已经全局上了json body parser，因此就刻意的提交json吧！
+        appointment.find({appid: req.params.appid}).toArray(((error, result) => {
+            if (result.length === 0) {
+                res.status(410).end("no such appointment")
+            } else {
+                let current_status = result[0].status;
+                if (current_status === "successful" || current_status === "failed" || current_status === "canceled") {
+                    res.status(402).end("cannot cancel a terminated or canceled appointment");
+                } else {
+                    appointment.updateOne({appid: req.params.appid}, {
+                        $set: {status: "canceled"}, $push: {
+                            history: {
+                                status: "canceled",
+                                userid: "2018XXXX", // TODO: 依旧是cookie解析。
+                                time: new Date(),
+                                reason: req.body.reason // 取消预约的原因
+                            }
+                        }
+                    }).then(() => {
+                        res.status(200).end("cancel successful.")
+                    })
+                }
+            }
+        }));
+    });
+
     app.use((err, req, res, next) => {
         if (err instanceof ValidationError) {
             // At this point you can execute your error handling code
