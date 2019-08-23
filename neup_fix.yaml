@@ -36,11 +36,11 @@ paths:
                       example: "Only my railgun!"
                     image:
                       type: string
-                      format: url
+                      format: 'uri'
                       example: "https://camo.githubusercontent.com/0a418b2480838f49dd7225e1f29df77753a8ab96/687474703a2f2f67657477616c6c7061706572732e636f6d2f77616c6c70617065722f66756c6c2f302f652f332f3932333239332d6e65772d656d696c792d7468652d737472616e67652d77616c6c70617065722d3236373678313434302e6a7067"
     post:
-      security: 
-      - cookieAuth: [Admin]
+      security:
+        - cookieAuth: [Admin]
       tags:
         - 公告
       operationId: addAnnouncement
@@ -56,7 +56,7 @@ paths:
                   type: string
                 image:
                   type: string
-              required: 
+              required:
                 [text]
       responses:
         '200':
@@ -93,7 +93,7 @@ paths:
                     onee-sama!!
                 image:
                   type: string
-                  format: url
+                  format: 'uri'
                   example: "https://camo.githubusercontent.com/0a418b2480838f49dd7225e1f29df77753a8ab96/687474703a2f2f67657477616c6c7061706572732e636f6d2f77616c6c70617065722f66756c6c2f302f652f332f3932333239332d6e65772d656d696c792d7468652d737472616e67652d77616c6c70617065722d3236373678313434302e6a7067"
       responses:
         '200':
@@ -107,18 +107,18 @@ paths:
         '410':
           description: 找不到修改的目标
     delete:
-      tags: 
-      - 公告
-      security: 
-      - cookieAuth: [Admin]
+      tags:
+        - 公告
+      security:
+        - cookieAuth: [Admin]
       description: 删除一个公告
-      parameters: 
-      - in: path
-        name: annid
-        description: 待删除公告的annid
-        schema:
-          type: string
-          example: "sddf1edf-asde54f5e2d-assssdf"
+      parameters:
+        - in: path
+          name: annid
+          description: 待删除公告的annid
+          schema:
+            type: string
+            example: "sddf1edf-asde54f5e2d-assssdf"
       responses:
         '204':
           description: 删除成功
@@ -131,16 +131,16 @@ paths:
   /user:
     get:
       description: 返回对应的用户信息
-      tags: 
-      - 用户信息
-      parameters: 
-      - in: query
-        name: userid
-        required: true
-        description: 对应id用户的基本信息
-        schema:
-          type: string
-          example: "RAILGUN"
+      tags:
+        - 用户信息
+      parameters:
+        - in: query
+          name: userid
+          required: true
+          description: 对应id用户的基本信息
+          schema:
+            type: string
+            example: "RAILGUN"
       responses:
         '200':
           description: 查询成功
@@ -154,23 +154,23 @@ paths:
           description: 找不到请求的目标
     put:
       description: 修改一个用户的信息，只有用户自己和管理员有权限修改。
-      security: 
-      - cookieAuth: [User, Admin]
-      tags: 
-      - 用户信息
-      parameters: 
-      - in: query
-        name: userid
-        required: true
-        description: 要修改的用户的信息
-        schema:
-          type: string
-          example: "userid=RAILGUN"
+      security:
+        - cookieAuth: [User, Admin]
+      tags:
+        - 用户信息
+      parameters:
+        - in: query
+          name: userid
+          required: true
+          description: 要修改的用户的信息
+          schema:
+            type: string
+            example: "userid=RAILGUN"
       requestBody:
         description: 修改之后的新的信息
         content:
           application/json:
-            schema: 
+            schema:
               $ref: '#/components/schemas/UserInfo'
       responses:
         "200":
@@ -179,54 +179,54 @@ paths:
           description: 找不到修改的目标
         '400':
           description: 请求格式错误
-          
+
   /app:
     get:
-      tags: 
-      - 维修预约
+      tags:
+        - 维修预约
       description: 查询所有符合条件的预约并返回简要信息列表。
-      parameters: 
-      - in: query
-        name: appid
-        description: 预约的编号
-        schema:
-          $ref: '#/components/schemas/Appointment_get/properties/appid'
-      
-      - in: query
-        name: status
-        description: 预约的状态
-        schema:
-          $ref: '#/components/schemas/Appointment_get/properties/status'
-          
-      - in: query
-        name: userid
-        description: 用户编号
-        schema:
-          $ref: '#/components/schemas/Appointment_get/properties/userid'
-      
-      - in: query
-        name: app_make_time
-        description: 发布时间
-        schema:
-          $ref: '#/components/schemas/Appointment_get/properties/app_make_time'
-      
-      - in: query
-        name: repair
-        description: 维修类型
-        schema:
-          $ref: '#/components/schemas/Appointment_get/properties/repair'
-          
-      - in: query
-        name: device_type
-        description: 设备类型
-        schema:
-          $ref: '#/components/schemas/Appointment_get/properties/device_type'
-        
-      - in: query
-        name: device_model
-        description: 设备型号
-        schema:
-          $ref: '#/components/schemas/Appointment_get/properties/device_model'
+      parameters:
+        - in: query
+          name: appid
+          description: 预约的编号
+          schema:
+            $ref: '#/components/schemas/Appointment_get/properties/appid'
+
+        - in: query
+          name: status
+          description: 预约的状态
+          schema:
+            $ref: '#/components/schemas/Appointment_get/properties/status'
+
+        - in: query
+          name: userid
+          description: 用户编号
+          schema:
+            $ref: '#/components/schemas/Appointment_get/properties/userid'
+
+        - in: query
+          name: app_make_time
+          description: 发布时间
+          schema:
+            $ref: '#/components/schemas/Appointment_get/properties/app_make_time'
+
+        - in: query
+          name: repair
+          description: 维修类型
+          schema:
+            $ref: '#/components/schemas/Appointment_get/properties/repair'
+
+        - in: query
+          name: device_type
+          description: 设备类型
+          schema:
+            $ref: '#/components/schemas/Appointment_get/properties/device_type'
+
+        - in: query
+          name: device_model
+          description: 设备型号
+          schema:
+            $ref: '#/components/schemas/Appointment_get/properties/device_model'
       responses:
         '200':
           description: 请求成功，返回符合查询条件的列表
@@ -266,7 +266,7 @@ paths:
           name: appid
           schema:
             $ref: '#/components/schemas/Appointment_get/properties/appid'
-          description: 预约的编号          
+          description: 预约的编号
           required: true
       responses:
         '200':
@@ -293,7 +293,7 @@ paths:
           name: appid
           schema:
             $ref: '#/components/schemas/Appointment_get/properties/appid'
-          description: 预约的编号          
+          description: 预约的编号
           required: true
       requestBody:
         content:
@@ -337,7 +337,7 @@ paths:
           name: appid
           schema:
             $ref: '#/components/schemas/Appointment_get/properties/appid'
-          description: 预约的编号          
+          description: 预约的编号
           required: true
       security:
         - cookieAuth: [User, Admin]
@@ -416,7 +416,16 @@ paths:
       description: 添加一条留言，需要登录
       security:
         - cookieAuth: [User]
-      
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                content_text:
+                  $ref: '#/components/schemas/Message_board/items/properties/content_text'
+                content_image:
+                  $ref: '#/components/schemas/Message_board/items/properties/content_image'
       parameters:
         - in: path
           name: appid
@@ -431,7 +440,7 @@ paths:
           description: 请求格式错误
         '401':
           description: 请求的权限需要登录
-    
+
   /app/{appid}/messageboard/{mesid}:
     patch:
       tags:
@@ -451,16 +460,18 @@ paths:
           description: 待修改留言的全局统一编号
           schema:
             $ref: '#/components/schemas/Message_board/items/properties/mesid'
-          required: true 
+          required: true
       requestBody:
         content:
           application/json:
             schema:
               type: object
               properties:
-                content:
-                  $ref: '#/components/schemas/Message_board/items/properties/content'
-      
+                content_text:
+                  $ref: '#/components/schemas/Message_board/items/properties/content_text'
+                content_image:
+                  $ref: '#/components/schemas/Message_board/items/properties/content_image'
+
       responses:
         '200':
           description: 修改成功
@@ -491,7 +502,7 @@ paths:
           description: 待删除留言的全局统一编号
           schema:
             $ref: '#/components/schemas/Message_board/items/properties/mesid'
-          required: true 
+          required: true
       responses:
         '204':
           description: 删除成功
@@ -526,7 +537,7 @@ components:
           description: 用户自我签名描述
           type: string
           example: Only my railgun!
-    
+
     Appointment_get:
       type: object
       properties:
@@ -538,12 +549,12 @@ components:
           type: string
           description: 预约状态
           enum:
-          - submitted
-          - accepted
-          - successful
-          - failed
-          - canceled
-#        注意，接下来的userid和app_make_time都是history的一部分。3
+            - submitted
+            - accepted
+            - successful
+            - failed
+            - canceled
+        #        注意，接下来的userid和app_make_time都是history的一部分。3
         userid:
           type: string
           description: 提交预约用户的id
@@ -630,7 +641,7 @@ components:
                 type: string
                 required: false
                 example: 这个问题太严重，我们缺少专业的设备，无法维修。（只有当数组中一项的status为canceled时，才会同时具有该条属性。）
-#        我们不要什么创建时间和创建人了，我们只需要history就可以了。
+        #        我们不要什么创建时间和创建人了，我们只需要history就可以了。
         repair:
           $ref: '#/components/schemas/Appointment_get/properties/repair'
         device_type:
@@ -672,16 +683,23 @@ components:
             type: string
             description: 留言用户id
             example: 2018XXXX
-          content:
+          content_text:
             type: string
             description: 留言板内容
             example: 最喜欢姐姐大人了
+          content_image:
+            type: array
+            description: 该条留言所附有的图片url，保存在一个数组中
+            items:
+              type: string
+              description: 用户上传图片的地址
+              format: 'uri'
+              example: "https://www.urlshare.cn/12d5Sdf4e8aPsdf1235e"
           time:
             type: string
             format: 'date-time'
             description: 留言发布时间
             example: '2019-08-12T07:05:28.826Z'
-
 
   responses:
     '200':
@@ -694,18 +712,7 @@ components:
       description: 找不到修改的目标
     '400':
       description: 请求格式错误
-      
-        
 
-          
-
-
-
-
-
-
-        
-        
 
   securitySchemes:
     cookieAuth:

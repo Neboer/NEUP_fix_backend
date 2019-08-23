@@ -99,7 +99,27 @@ let schema = {
         type: "object",
         properties: {
             reason: {type: "string"}
-        }
+        },
+        additionalProperties: false
+    },
+
+    //提交新的留言信息。
+    mes_post_body: {
+        type: "object",
+        properties: {
+            content_text: {
+                type: "string",
+            },
+            content_image: {
+                type: "array",
+                items: {
+                    type: "string",
+                    format: "uri",
+                },
+                additionalProperties: false
+            }
+        },
+        additionalProperties: false
     }
 };
 export default schema;

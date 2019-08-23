@@ -124,7 +124,7 @@ client.connect().then((Client) => {
             userid: "2018XXXX",// TODO: 根据cookie解析。
             time: new Date()
         }];
-        insert_data.mesid_list = [];// 留言板id列表。这个作用非常明确，绑定每个预约和对应的留言板id。留言板不用一并发送给客户端，客户端需要访问/
+        insert_data.mes_list = [];// 该条预约下的所有留言板数据。
         // 至此，一个预约的所有元数据准备完毕，存入数据库。
         appointment.insertOne(insert_data).then(() => {
             res.status(200).end("insert successful.")
@@ -137,7 +137,7 @@ client.connect().then((Client) => {
         appointment.find({appid: req.params.appid}).toArray(((error, result) => {
             let full_data = result[0];
             delete full_data._id;
-            delete full_data.mesid_list;
+            delete full_data.mes_list;
             res.json(full_data);
         }))
     });
@@ -219,6 +219,79 @@ client.connect().then((Client) => {
                 }
             }
         }));
+    });
+    // 留言板。总体来讲，我并不打算把留言嵌入预约中一并存储。每条留言有自己的id，但也很想把留言直接插入预约中。既然是非关系型数据库，就直接插入吧，发挥你的优势，mongo！
+    // 把留言直接插入预约之中。
+    app.get('/app/:appid/messageboard', (req, res) => {
+        appointment.find({appid: req.params.appid}).toArray(((error, result) => {
+            if (result.length === 0) {
+                res.status(410).end("no such appointment")
+            } else {
+                let send_message = result[0].mes_list.map((message) => {
+                    return {
+                        mesid: message.mesid,
+                        appid: req.params.appid,
+                        userid: message.userid,
+                        content_text: message.content_text,
+                        content_image: message.content_image,
+                        time: message.time
+                    }
+                });
+                res.json(send_message)
+            }
+        }))
+    });
+
+    app.post('/app/:appid/messageboard', validate({body: schema.mes_post_body}), (req, res) => {
+        appointment.find({appid: req.params.appid}).toArray(((error, result) => {
+            if (result.length === 0) {
+                res.status(410).end("no such appointment")
+            } else {
+                let insert_data = {
+                    mesid: 1234, // TODO: 自增自增！
+                    userid: "2018XXXX",
+                    content_text: req.body.content_text,
+                    content_image: req.body.content_image,
+                    time: new Date()
+                };
+                appointment.updateOne({appid: parseInt(req.params.appid)}, {$push: {mes_list: insert_data}}).then((result) => {
+                    res.status(200).end("message successful")
+                })
+            }
+        }))
+    });
+
+    app.patch('/app/:appid/messageboard/:mesid', validate({body: schema.mes_post_body}), (req, res) => {
+        appointment.findOneAndUpdate({appid: parseInt(req.params.appid)},
+            {
+                $set: {
+                    "mes_list.$[first]": req.body
+                }
+            },
+            {
+                arrayFilters: [{
+                    "first.mesid": req.params.mesid
+                }]
+            }).then(res => {
+            if (res) {
+                res.status(200).end("update successful.") // TODO:这里应该有各种错误的应对
+            }
+        })
+    });
+
+    app.delete('/app/:appid/messageboard/:mesid', (req, res) => {
+        let appid = parseInt(req.params.appid);
+        let mesid = parseInt(req.params.mesid);
+        appointment.findOneAndUpdate({appid: appid},
+            {
+                $pull: {
+                    "mes_list": {"mesid": mesid}
+                }
+            }).then(result => {
+            if (result) {
+                res.status(200).end("delete successful.")
+            }
+        })
     });
 
     app.use((err, req, res, next) => {
