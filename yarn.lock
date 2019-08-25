@@ -832,10 +832,23 @@ convert-source-map@^1.1.0:
   dependencies:
     safe-buffer "~5.1.1"
 
+cookie-parser@^1.4.4:
+  version "1.4.4"
+  resolved "https://registry.npm.taobao.org/cookie-parser/download/cookie-parser-1.4.4.tgz#e6363de4ea98c3def9697b93421c09f30cf5d188"
+  integrity sha1-5jY95OqYw975aXuTQhwJ8wz10Yg=
+  dependencies:
+    cookie "0.3.1"
+    cookie-signature "1.0.6"
+
 cookie-signature@1.0.6:
   version "1.0.6"
   resolved "https://registry.npm.taobao.org/cookie-signature/download/cookie-signature-1.0.6.tgz#e303a882b342cc3ee8ca513a79999734dab3ae2c"
   integrity sha1-4wOogrNCzD7oylE6eZmXNNqzriw=
+
+cookie@0.3.1:
+  version "0.3.1"
+  resolved "https://registry.npm.taobao.org/cookie/download/cookie-0.3.1.tgz#e7e0a1f9ef43b4c8ba925c5c5a96e806d16873bb"
+  integrity sha1-5+Ch+e9DtMi6klxcWpboBtFoc7s=
 
 cookie@0.4.0:
   version "0.4.0"
@@ -855,6 +868,13 @@ core-js-pure@3.1.4:
   version "3.1.4"
   resolved "https://registry.npm.taobao.org/core-js-pure/download/core-js-pure-3.1.4.tgz#5fa17dc77002a169a3566cc48dc774d2e13e3769"
   integrity sha1-X6F9x3ACoWmjVmzEjcd00uE+N2k=
+
+crypto-random-string@^3.0.1:
+  version "3.0.1"
+  resolved "https://registry.npm.taobao.org/crypto-random-string/download/crypto-random-string-3.0.1.tgz#29d7dc759d577a768afb3b7b2765dd9bd7ffe36a"
+  integrity sha1-KdfcdZ1XenaK+zt7J2Xdm9f/42o=
+  dependencies:
+    type-fest "^0.5.2"
 
 debug@2.6.9:
   version "2.6.9"
@@ -1424,6 +1444,11 @@ trim-right@^1.0.1:
   version "1.0.1"
   resolved "https://registry.npm.taobao.org/trim-right/download/trim-right-1.0.1.tgz#cb2e1203067e0c8de1f614094b9fe45704ea6003"
   integrity sha1-yy4SAwZ+DI3h9hQJS5/kVwTqYAM=
+
+type-fest@^0.5.2:
+  version "0.5.2"
+  resolved "https://registry.npm.taobao.org/type-fest/download/type-fest-0.5.2.tgz?cache=0&sync_timestamp=1564840459932&other_urls=https%3A%2F%2Fregistry.npm.taobao.org%2Ftype-fest%2Fdownload%2Ftype-fest-0.5.2.tgz#d6ef42a0356c6cd45f49485c3b6281fc148e48a2"
+  integrity sha1-1u9CoDVsbNRfSUhcO2KB/BSOSKI=
 
 type-is@~1.6.17, type-is@~1.6.18:
   version "1.6.18"

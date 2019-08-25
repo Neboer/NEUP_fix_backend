@@ -3,6 +3,8 @@ import express from 'express';
 import {MongoClient, ObjectID} from 'mongodb';
 import bodyParser from "body-parser";
 import {Validator, ValidationError} from 'express-json-validator-middleware'
+import cookieParser from 'cookie-parser';
+import cryptoRandomString from "crypto-random-string";
 import schema from './validate_schema'
 
 const mongo_url = 'mongodb://localhost:27017';
@@ -13,6 +15,7 @@ const validator = new Validator({allErrors: true});
 
 const validate = validator.validate;
 app.use(bodyParser.json());
+app.use(cookieParser(cryptoRandomString({length: 30})));
 app.use("/", express.static("client-example"));
 console.debug("静态文件服务器已启动");
 const client = new MongoClient(mongo_url, {useNewUrlParser: true});
@@ -54,6 +57,7 @@ client.connect().then((Client) => {
             throw reason
         });
     });
+
     app.patch('/announcement/:annid', validate({body: schema.announcement_update_body}), (req, res) => {
         announcement.updateOne({"_id": ObjectID(req.params.annid)}, {$set: req.body}).then((result) => {
             if (result.result.nModified === 1) {
@@ -96,7 +100,15 @@ client.connect().then((Client) => {
             }
         })
     });
+
+    // 这个是实验功能。请求该条后，会自动在浏览器留下cookie，可以自主选择登录用户的身份、
+    app.get('/session/:identity', (req, res) => {
+        res.cookie('JSESSIONID', req.params.identity, {signed: true});
+        res.status(200).end('experiment login.')
+    });
+
     app.get('/app', validate({query: schema.app_get_query}), (req, res) => {
+        console.log(req.signedCookies.JSESSIONID);
         appointment.find(req.query).toArray((error, result) => {// TODO: 这里不能仅仅拿掉id就返回给用户。
             let prepared_result = result.map((one_appointment) => {
                 return {
@@ -134,12 +146,13 @@ client.connect().then((Client) => {
     }));
 
     app.get('/app/:appid', (req, res) => {// 获取一个预约的详细信息。
-        appointment.find({appid: req.params.appid}).toArray(((error, result) => {
-            let full_data = result[0];
+        res.end(req.cookies);
+        appointment.findOne({appid: req.params.appid}).then(result => {
+            let full_data = result;
             delete full_data._id;
             delete full_data.mes_list;
             res.json(full_data);
-        }))
+        });
     });
 
     app.patch('/app/:appid', validate({body: schema.app_update_body}), (req, res) => {
