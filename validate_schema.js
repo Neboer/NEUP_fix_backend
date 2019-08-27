@@ -17,22 +17,15 @@ let schema = {
         },
         additionalProperties: false
     },
-    userId_get_query: {
-        type: "object",
-        properties: {
-            userid: {type: "string"}
-        },
-        required: ["userid"],
-        additionalProperties: false
-    },
     userId_put_body: {
         type: "object",
         properties: {
             name: {type: "string"},
             avatar: {type: "string"},
-            signature: {type: "string"}
+            signature: {type: "string"},
+            identity: {type: "string"}
         },
-        required: ["name", "avatar", "signature"],
+        required: ["name", "avatar", "signature"],// 不管是不是更新身份，都要传进完整的对象。
         additionalProperties: false
     },
     // 这个是查询符合条件的预约所用到的查询参数json
@@ -122,4 +115,5 @@ let schema = {
         additionalProperties: false
     }
 };
+
 export default schema;

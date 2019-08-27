@@ -46,6 +46,7 @@ client.connect().then((Client) => {
         }));
         res.status(200).end();
     }));
+
     app.delete('/announcement/:annid', (req, res) => {
         announcement.deleteOne({"_id": ObjectID(req.params.annid)}).then((delete_result) => {
             if (delete_result.deletedCount === 1) {
@@ -70,27 +71,27 @@ client.connect().then((Client) => {
         })
     });
 
-    app.get('/user', validate({query: schema.userId_get_query}), (req, res) => {
-        user_info.find({userid: req.query.userid}).toArray((error, result) => {
-            if (result.length === 0) {
+    app.get('/user/:userid', (req, res) => {
+        user_info.findOne({userid: req.query.userid}).then((result) => {
+            if (result.length === null) {
                 res.status(410).end('no such user.')
             } else {
-                let data_wait_for_send = [];
-                for (let item of result) {
-                    data_wait_for_send.push({
-                        userid: item.userid,
-                        name: item.name,
-                        avatar: item.avatar,
-                        signature: item.signature
-                    })
-                }
-                res.json(data_wait_for_send);
+                let data = {
+                    userid: result.userid,
+                    name: result.name,
+                    avatar: result.avatar,
+                    signature: result.signature,
+                    first_login: result.first_login,
+                    identity: result.identity
+                };
+                res.json(data);
             }
 
         })
     });
-    app.put('/user', validate({query: schema.userId_get_query, body: schema.userId_put_body}), (req, res) => {
-        user_info.updateOne({userid: req.query.userid}, {$set: req.body}).then((result) => {
+
+    app.put('/user/:userid', validate({body: schema.userId_put_body}), (req, res) => {
+        user_info.updateOne({userid: req.params.userid}, {$set: req.body}).then((result) => {
             if (result.result.nModified === 1) {
                 res.status(200).end("update successful.")
             } else if (result.result.n === 1) {
@@ -101,14 +102,18 @@ client.connect().then((Client) => {
         })
     });
 
-    // 这个是实验功能。请求该条后，会自动在浏览器留下cookie，可以自主选择登录用户的身份、
-    app.get('/session/:identity', (req, res) => {
-        res.cookie('JSESSIONID', req.params.identity, {signed: true});
+    /* 这个是实验功能。请求该条后，会自动在浏览器留下cookie，可以自主选择登录用户的身份。
+    * 用户请求之后就相当于登录了，会获得一个身份，这个身份是加密的session，内容是账号字符串。会保存起来*/
+    app.get('/session/:userid', (req, res) => {
+        /**@param {{userid:string}} req.params**/
+        res.cookie('JSESSIONID', req.params.userid, {signed: true});
         res.status(200).end('experiment login.')
     });
 
     app.get('/app', validate({query: schema.app_get_query}), (req, res) => {
-        console.log(req.signedCookies.JSESSIONID);
+        /**@param {{JSESSIONID:string}} req.signedCookies  **/
+        console.log(Object.keys(req.signedCookies).length);
+        console.log(req.headers.cookie);
         appointment.find(req.query).toArray((error, result) => {// TODO: 这里不能仅仅拿掉id就返回给用户。
             let prepared_result = result.map((one_appointment) => {
                 return {

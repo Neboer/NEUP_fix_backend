@@ -46,7 +46,7 @@ paths:
       operationId: addAnnouncement
       description: 增加一条公告
       requestBody:
-        description: 增加的公告内容，可以仅有文字
+        description: 增加的公告内容，可以仅有文字。注意公告的id是ObjectId，不同于数字编号id。
         content:
           application/json:
             schema:
@@ -128,19 +128,21 @@ paths:
           description: 请求的权限不够
         '400':
           description: 请求格式错误
-  /user:
+  /user/{userid}:
+    # user表有一个使命，就是保存用户的权限。权限的查询和用户的查询一样，都是是游客开放的。但是仅仅硬件部管理员可以修改某个用户的“权限”属性，普通用户自身只能修改自己的其他属性。
+    # 用户表在用户首次登录的时候会插入一条。默认用户的权限仅仅是user，但是管理员可以变更这个默认赋予的权限。
     get:
       description: 返回对应的用户信息
       tags:
         - 用户信息
       parameters:
-        - in: query
+        - in: path
           name: userid
           required: true
-          description: 对应id用户的基本信息
+          description: 查询一个对应id用户的基本信息
           schema:
             type: string
-            example: "RAILGUN"
+            example: "2018XXXX"
       responses:
         '200':
           description: 查询成功
@@ -159,13 +161,13 @@ paths:
       tags:
         - 用户信息
       parameters:
-        - in: query
+        - in: path
           name: userid
           required: true
-          description: 要修改的用户的信息
+          description: 要修改的用户的id
           schema:
             type: string
-            example: "userid=RAILGUN"
+            example: "2018XXXX"
       requestBody:
         description: 修改之后的新的信息
         content:
@@ -283,7 +285,7 @@ paths:
           description: 请求所需权限不够
 
     patch:
-      description: 修改某条特定预约的特定属性，从四种属性中选择一种或多种来请求。只有硬件部才能修改。
+      description: 修改某条预约，也就是更新预约的进程，比如调整一个已经提交的预约为“已接受”并为之安排时间和资源。只有硬件部才能修改。
       tags:
         - 维修预约
       security:
@@ -537,6 +539,17 @@ components:
           description: 用户自我签名描述
           type: string
           example: Only my railgun!
+        first_login:
+          description: 用户首次注册登录的时间
+          type: string
+          format: 'date-time'
+        identity:
+          description: 用户身份描述字段。如果更新操作在请求体中有这个字段，那么请求者的权限一定要求是admin。
+          type: string
+          enum:
+            - admin
+            - user
+          example: user
 
     Appointment_get:
       type: object
