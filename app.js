@@ -136,7 +136,7 @@ client.connect().then((Client) => {
         })
     });
 
-    app.post('/app', auth_admin, validate({body: schema.app_post_body}), ((req, res) => {
+    app.post('/app', auth_user, validate({body: schema.app_post_body}), ((req, res) => {
         let insert_data = req.body;
         insert_data.appid = 2; // TODO: 自增运算！这个最好做成数据库操作。实在不行就用最lowb的办法，但可能用不到。
         insert_data.status = "submitted";
@@ -157,6 +157,7 @@ client.connect().then((Client) => {
     }));
 
     app.get('/app/:appid', auth_user, special_auth.appointment_detail_control, (req, res) => {// 获取一个预约的详细信息。
+        // 这里为了代码简洁不择手段了，添加中间件增加了一次查询，我也不打算避开了。
         appointment.findOne({appid: req.params.appid}).then(result => {
                 let full_data = result;
                 delete full_data._id;
@@ -168,12 +169,8 @@ client.connect().then((Client) => {
 
     app.patch('/app/:appid', auth_user, validate({body: schema.app_update_body}), special_auth.appointment_detail_control, (req, res) => {
         // 检查update行为是否合法。不能对一个已经被标为“成功/失败/取消”的目标update
-        appointment.find({appid: req.query.appid}).toArray(((error, result) => {
-            if (result.length === 0) {
-                res.status(404).end("no such appointment");
-            }
-            // 只有已提交或已接受的记录才可以更新。为了便于理解，我们把状态分为三类“已提交”、“已接受”和“已结束”。状态只能向前更新。
-            let current_status = result[0].status;
+        appointment.findOne({appid: req.query.appid}).then(result => {
+            let current_status = result.status;
             let update_status = req.body.status;
             if (current_status !== "submitted" && current_status !== "accepted") {
                 res.status(402).end("cannot update a terminated appointment");
@@ -186,7 +183,7 @@ client.connect().then((Client) => {
                     $set: req.body, $push: {
                         history: {
                             status: update_status,
-                            userid: "2018XXXX", // 这个userid要和未来的cookie校验一致。
+                            userid: req.signedCookies.JSESSIONID,
                             time: (new Date())
                         }
                     }
@@ -196,7 +193,7 @@ client.connect().then((Client) => {
                     }
                 });
             }
-        }));
+        });
     });
 
     app.put('/app/:appid', auth_user, validate({body: schema.app_post_body}), special_auth.appointment_detail_control, (req, res) => {
@@ -220,36 +217,25 @@ client.connect().then((Client) => {
     });
 
     app.delete('/app/:appid', auth_user, validate({body: schema.app_delete_body}), special_auth.appointment_detail_control, (req, res) => {// 本来打算使用text，但是鉴于已经全局上了json body parser，因此就刻意的提交json吧！
-        appointment.find({appid: req.params.appid}).toArray(((error, result) => {
-            if (result.length === 0) {
-                res.status(404).end("no such appointment")
-            } else {
-                let current_status = result[0].status;
-                if (current_status === "successful" || current_status === "failed" || current_status === "canceled") {
-                    res.status(402).end("cannot cancel a terminated or canceled appointment");
-                } else {
-                    appointment.updateOne({appid: req.params.appid}, {
-                        $set: {status: "canceled"}, $push: {
-                            history: {
-                                status: "canceled",
-                                userid: req.signedCookies.JSESSIONID, // TODO: 依旧是cookie解析。
-                                time: new Date(),
-                                reason: req.body.reason // 取消预约的原因
-                            }
-                        }
-                    }).then(() => {
-                        res.status(200).end("cancel successful.")
-                    })
+        appointment.updateOne({appid: req.params.appid}, {
+            $set: {status: "canceled"}, $push: {
+                history: {
+                    status: "canceled",
+                    userid: req.signedCookies.JSESSIONID, // 依旧是cookie解析。
+                    time: new Date(),
+                    reason: req.body.reason // 取消预约的原因
                 }
             }
-        }));
+        }).then(() => {
+            res.status(200).end("cancel successful.")
+        });
     });
     // 留言板。总体来讲，我并不打算把留言嵌入预约中一并存储。每条留言有自己的id，但也很想把留言直接插入预约中。既然是非关系型数据库，就直接插入吧，发挥你的优势，mongo！
     // 把留言直接插入预约之中。
     app.get('/app/:appid/messageboard', (req, res) => {
-        appointment.find({appid: req.params.appid}).toArray(((error, result) => {
-            if (result.length === 0) {
-                res.status(404).end("no such appointment")
+        appointment.findOne({appid: req.params.appid}).then(result => {
+            if (result === null) {
+                res.status(404).end('no such appointment');
             } else {
                 let send_message = result[0].mes_list.map((message) => {
                     return {
@@ -263,29 +249,24 @@ client.connect().then((Client) => {
                 });
                 res.json(send_message)
             }
-        }))
+        });
     });
 
-    app.post('/app/:appid/messageboard', validate({body: schema.mes_post_body}), (req, res) => {
-        appointment.find({appid: req.params.appid}).toArray(((error, result) => {
-            if (result.length === 0) {
-                res.status(404).end("no such appointment")
-            } else {
-                let insert_data = {
-                    mesid: 1234, // TODO: 自增自增！
-                    userid: "2018XXXX",
-                    content_text: req.body.content_text,
-                    content_image: req.body.content_image,
-                    time: new Date()
-                };
-                appointment.updateOne({appid: parseInt(req.params.appid)}, {$push: {mes_list: insert_data}}).then((result) => {
-                    res.status(200).end("message successful")
-                })
+    app.post('/app/:appid/messageboard', auth_user, validate({body: schema.mes_post_body}), (req, res) => {
+        let insert_data = {
+            mesid: 1234, // TODO: 自增自增！
+            userid: req.signedCookies.JSESSIONID,
+            content_text: req.body.content_text,
+            content_image: req.body.content_image,
+            time: new Date()
+        };
+        announcement.findOneAndUpdate({appid: parseInt(req.params.appid)}, {$push: {mes_list: insert_data}}).then(() => {
+                res.status(200).end("message successful")
             }
-        }))
+        );//TODO: 这里一定要有错误处理，因为可以一句话里一起解决，不需要中间件。
     });
 
-    app.patch('/app/:appid/messageboard/:mesid', validate({body: schema.mes_post_body}), (req, res) => {
+    app.patch('/app/:appid/messageboard/:mesid', auth_user, validate({body: schema.mes_post_body}), special_auth.message_board_control, (req, res) => {
         appointment.findOneAndUpdate({appid: parseInt(req.params.appid)},
             {
                 $set: {
@@ -298,12 +279,12 @@ client.connect().then((Client) => {
                 }]
             }).then(result => {
             if (result) {
-                res.status(200).end("update successful.") // TODO:这里应该有各种错误的应对
+                res.status(200).end("update successful.")
             }
         })
     });
 
-    app.delete('/app/:appid/messageboard/:mesid', (req, res) => {
+    app.delete('/app/:appid/messageboard/:mesid', auth_user, special_auth.message_board_control, (req, res) => {
         let appid = parseInt(req.params.appid);
         let mesid = parseInt(req.params.mesid);
         appointment.findOneAndUpdate({appid: appid},

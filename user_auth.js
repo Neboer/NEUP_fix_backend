@@ -92,6 +92,7 @@ export let special_auth = {
             }
         }
     },
+    // 预约细节访问控制中间件，裁决用户是否拥有控制指定预约的权限并决定拒绝还是放行
     appointment_detail_control: function (req, res, next) {
         if (req.user_identity === 'admin') {// 管理员大哥嚯冰阔落
             next()
@@ -104,6 +105,32 @@ export let special_auth = {
                     res.status(405).end('operation not permitted')
                 } else {// 好了好了这条预约你有权处置，控制权交出去啦
                     next()
+                }
+            })
+        }
+    },
+    // 留言板访问控制中间件，裁决用户是否拥有控制指定留言的权限并决定拒绝还是放行
+    message_board_control: function (req, res, next) {
+        if (req.user_identity === 'admin') {// 管理员大哥嚯冰阔落
+            next()
+        } else {
+            let appointment = req.mongoDatabase.collection('appointment');
+            appointment.findOne({appid: req.params.appid}).then(result => {
+                if (result === null) {
+                    res.status(404).end('no such appointment')
+                } else {
+                    let message_piece = result.mes_list.find(message => {
+                        return message.mesid === req.params.mesid
+                    });
+                    if (message_piece === undefined) {
+                        res.status(404).end('no such message');
+                    } else {
+                        if (req.signedCookies.JSESSIONID === message_piece.userid) {
+                            next();
+                        } else {
+                            res.status(405).end('operation not permitted');
+                        }
+                    }
                 }
             })
         }
