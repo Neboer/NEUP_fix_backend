@@ -6,6 +6,7 @@ import {Validator, ValidationError} from 'express-json-validator-middleware'
 import cookieParser from 'cookie-parser';
 import cryptoRandomString from "crypto-random-string";
 import schema from './validate_schema'
+import {make_user_info_db_in_req, auth_user, auth_admin, special_auth} from './user_auth'
 
 const mongo_url = 'mongodb://localhost:27017';
 const mongo_dbname = 'NEUP_fix';
@@ -24,6 +25,11 @@ client.connect().then((Client) => {
     const announcement = NEUP_fix.collection("announcement");// 公告表
     const user_info = NEUP_fix.collection("user_info");// 用户信息表
     const appointment = NEUP_fix.collection("appointment");// 所有的预约
+    app.use(make_user_info_db_in_req(user_info));// 将用户信息表绑定在请求对象中，方便user_auth调用。
+    app.use(function (req, res, next) {
+        req.mongoDatabase = NEUP_fix; // 绑定整个数据库方便查询。并不是正式绑定而是临时绑定，所以查询用户用上面那个而并不直接调用这个。。。都是借口2333
+        next()
+    });
     app.get('/announcement', (req, res) => {
         announcement.find({}).toArray(((error, result) => {
             let pass_result = result.map((single_ann) => {
@@ -47,26 +53,26 @@ client.connect().then((Client) => {
         res.status(200).end();
     }));
 
-    app.delete('/announcement/:annid', (req, res) => {
+    app.delete('/announcement/:annid', auth_admin, (req, res) => {
         announcement.deleteOne({"_id": ObjectID(req.params.annid)}).then((delete_result) => {
             if (delete_result.deletedCount === 1) {
                 res.status(200).end("delete successful.");
             } else {
-                res.status(410).end("no such announcement.")
+                res.status(404).end("no such announcement.")
             }
         }).catch(reason => {
             throw reason
         });
     });
 
-    app.patch('/announcement/:annid', validate({body: schema.announcement_update_body}), (req, res) => {
+    app.patch('/announcement/:annid', auth_admin, validate({body: schema.announcement_update_body}), (req, res) => {
         announcement.updateOne({"_id": ObjectID(req.params.annid)}, {$set: req.body}).then((result) => {
             if (result.result.nModified === 1) {
                 res.status(200).end("update successful.")
             } else if (result.result.n === 1) {
                 res.status(200).end("no update performed");
             } else {
-                res.status(410).end('no such announcement')
+                res.status(404).end('no such announcement')
             }
         })
     });
@@ -74,7 +80,7 @@ client.connect().then((Client) => {
     app.get('/user/:userid', (req, res) => {
         user_info.findOne({userid: req.query.userid}).then((result) => {
             if (result.length === null) {
-                res.status(410).end('no such user.')
+                res.status(404).end('no such user.')
             } else {
                 let data = {
                     userid: result.userid,
@@ -90,14 +96,14 @@ client.connect().then((Client) => {
         })
     });
 
-    app.put('/user/:userid', validate({body: schema.userId_put_body}), (req, res) => {
+    app.put('/user/:userid', auth_user, validate({body: schema.userId_put_body}), special_auth.user_info_update, (req, res) => {
         user_info.updateOne({userid: req.params.userid}, {$set: req.body}).then((result) => {
             if (result.result.nModified === 1) {
                 res.status(200).end("update successful.")
             } else if (result.result.n === 1) {
                 res.status(200).end("no update performed");
             } else {
-                res.status(410).end('no such user')
+                res.status(404).end('no such user')
             }
         })
     });
@@ -130,15 +136,15 @@ client.connect().then((Client) => {
         })
     });
 
-    app.post('/app', validate({body: schema.app_post_body}), ((req, res) => {
+    app.post('/app', auth_admin, validate({body: schema.app_post_body}), ((req, res) => {
         let insert_data = req.body;
-        insert_data.appid = 2; // TODO: 自增运算！
+        insert_data.appid = 2; // TODO: 自增运算！这个最好做成数据库操作。实在不行就用最lowb的办法，但可能用不到。
         insert_data.status = "submitted";
         insert_data.app_exec_time = null;
         insert_data.member = null;// submitted状态下，还没有安排维修人员。
         insert_data.history = [{
             status: "submitted",
-            userid: "2018XXXX",// TODO: 根据cookie解析。
+            userid: req.cookies.JSESSIONID,// 根据cookie解析。
             time: new Date()
         }];
         insert_data.mes_list = [];// 该条预约下的所有留言板数据。
@@ -150,21 +156,21 @@ client.connect().then((Client) => {
         })
     }));
 
-    app.get('/app/:appid', (req, res) => {// 获取一个预约的详细信息。
-        res.end(req.cookies);
+    app.get('/app/:appid', auth_user, special_auth.appointment_detail_control, (req, res) => {// 获取一个预约的详细信息。
         appointment.findOne({appid: req.params.appid}).then(result => {
-            let full_data = result;
-            delete full_data._id;
-            delete full_data.mes_list;
-            res.json(full_data);
-        });
+                let full_data = result;
+                delete full_data._id;
+                delete full_data.mes_list;
+                res.json(full_data);
+            }
+        );
     });
 
-    app.patch('/app/:appid', validate({body: schema.app_update_body}), (req, res) => {
+    app.patch('/app/:appid', auth_user, validate({body: schema.app_update_body}), special_auth.appointment_detail_control, (req, res) => {
         // 检查update行为是否合法。不能对一个已经被标为“成功/失败/取消”的目标update
         appointment.find({appid: req.query.appid}).toArray(((error, result) => {
             if (result.length === 0) {
-                res.status(410).end("no such appointment");
+                res.status(404).end("no such appointment");
             }
             // 只有已提交或已接受的记录才可以更新。为了便于理解，我们把状态分为三类“已提交”、“已接受”和“已结束”。状态只能向前更新。
             let current_status = result[0].status;
@@ -193,7 +199,7 @@ client.connect().then((Client) => {
         }));
     });
 
-    app.put('/app/:appid', validate({body: schema.app_post_body}), (req, res) => {
+    app.put('/app/:appid', auth_user, validate({body: schema.app_post_body}), special_auth.appointment_detail_control, (req, res) => {
         appointment.find({appid: req.params.appid}).toArray((error, result) => {
             let current_status = result[0].status;
             if (current_status !== "submitted") {
@@ -205,7 +211,7 @@ client.connect().then((Client) => {
                     } else if (result.result.n === 1) {
                         res.status(200).end("no update performed");
                     } else {
-                        res.status(410).end('no such appointment')
+                        res.status(404).end('no such appointment')
                     }
                 })
             }
@@ -213,10 +219,10 @@ client.connect().then((Client) => {
 
     });
 
-    app.delete('/app/:appid', validate({body: schema.app_delete_body}), (req, res) => {// 本来打算使用text，但是鉴于已经全局上了json body parser，因此就刻意的提交json吧！
+    app.delete('/app/:appid', auth_user, validate({body: schema.app_delete_body}), special_auth.appointment_detail_control, (req, res) => {// 本来打算使用text，但是鉴于已经全局上了json body parser，因此就刻意的提交json吧！
         appointment.find({appid: req.params.appid}).toArray(((error, result) => {
             if (result.length === 0) {
-                res.status(410).end("no such appointment")
+                res.status(404).end("no such appointment")
             } else {
                 let current_status = result[0].status;
                 if (current_status === "successful" || current_status === "failed" || current_status === "canceled") {
@@ -226,7 +232,7 @@ client.connect().then((Client) => {
                         $set: {status: "canceled"}, $push: {
                             history: {
                                 status: "canceled",
-                                userid: "2018XXXX", // TODO: 依旧是cookie解析。
+                                userid: req.signedCookies.JSESSIONID, // TODO: 依旧是cookie解析。
                                 time: new Date(),
                                 reason: req.body.reason // 取消预约的原因
                             }
@@ -243,7 +249,7 @@ client.connect().then((Client) => {
     app.get('/app/:appid/messageboard', (req, res) => {
         appointment.find({appid: req.params.appid}).toArray(((error, result) => {
             if (result.length === 0) {
-                res.status(410).end("no such appointment")
+                res.status(404).end("no such appointment")
             } else {
                 let send_message = result[0].mes_list.map((message) => {
                     return {
@@ -263,7 +269,7 @@ client.connect().then((Client) => {
     app.post('/app/:appid/messageboard', validate({body: schema.mes_post_body}), (req, res) => {
         appointment.find({appid: req.params.appid}).toArray(((error, result) => {
             if (result.length === 0) {
-                res.status(410).end("no such appointment")
+                res.status(404).end("no such appointment")
             } else {
                 let insert_data = {
                     mesid: 1234, // TODO: 自增自增！
@@ -290,8 +296,8 @@ client.connect().then((Client) => {
                 arrayFilters: [{
                     "first.mesid": req.params.mesid
                 }]
-            }).then(res => {
-            if (res) {
+            }).then(result => {
+            if (result) {
                 res.status(200).end("update successful.") // TODO:这里应该有各种错误的应对
             }
         })

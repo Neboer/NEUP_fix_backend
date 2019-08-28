@@ -104,7 +104,7 @@ paths:
           description: 请求需要登录
         '405':
           description: 请求所需权限不够
-        '410':
+        '404':
           description: 找不到修改的目标
     delete:
       tags:
@@ -122,7 +122,7 @@ paths:
       responses:
         '204':
           description: 删除成功
-        '410':
+        '404':
           description: 找不到删除的目标
         '405':
           description: 请求的权限不够
@@ -152,7 +152,7 @@ paths:
                 $ref: '#/components/schemas/UserInfo'
         '400':
           description: 请求格式错误
-        '410':
+        '404':
           description: 找不到请求的目标
     put:
       description: 修改一个用户的信息，只有用户自己和管理员有权限修改。
@@ -177,7 +177,7 @@ paths:
       responses:
         "200":
           description: 修改成功
-        '410':
+        '404':
           description: 找不到修改的目标
         '400':
           description: 请求格式错误
@@ -327,7 +327,7 @@ paths:
           description: 请求的预约已经维修结束，不应该再更新状态。
         '405':
           description: 请求所需权限不够
-        '410':
+        '404':
           description: 找不到修改的目标
         '400':
           description: 请求格式错误
@@ -384,7 +384,7 @@ paths:
       responses:
         '204':
           description: 删除成功
-        '410':
+        '404':
           description: 找不到删除的目标
         '405':
           description: 请求的权限不够
@@ -477,7 +477,7 @@ paths:
       responses:
         '200':
           description: 修改成功
-        '410':
+        '404':
           description: 找不到修改的目标
         '405':
           description: 请求的权限不够
@@ -508,7 +508,7 @@ paths:
       responses:
         '204':
           description: 删除成功
-        '410':
+        '404':
           description: 找不到删除的目标
         '405':
           description: 请求的权限不够
@@ -721,7 +721,7 @@ components:
       description: 请求的权限需要登录
     '405':
       description: 请求所需权限不够
-    '410':
+    '404':
       description: 找不到修改的目标
     '400':
       description: 请求格式错误
