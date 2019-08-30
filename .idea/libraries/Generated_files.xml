@@ -3,22 +3,16 @@
     <properties>
       <sourceFilesUrls>
         <item url="file://$PROJECT_DIR$/dist/app.js" />
-        <item url="file://$PROJECT_DIR$/dist/babel.config.js" />
-        <item url="file://$PROJECT_DIR$/dist/db_operation.js" />
+        <item url="file://$PROJECT_DIR$/dist/db_index.js" />
         <item url="file://$PROJECT_DIR$/dist/dbtest.js" />
-        <item url="file://$PROJECT_DIR$/dist/json_schema.js" />
-        <item url="file://$PROJECT_DIR$/dist/library.js" />
         <item url="file://$PROJECT_DIR$/dist/user_auth.js" />
         <item url="file://$PROJECT_DIR$/dist/validate_schema.js" />
       </sourceFilesUrls>
     </properties>
     <CLASSES>
       <root url="file://$PROJECT_DIR$/dist/app.js" />
-      <root url="file://$PROJECT_DIR$/dist/babel.config.js" />
-      <root url="file://$PROJECT_DIR$/dist/db_operation.js" />
+      <root url="file://$PROJECT_DIR$/dist/db_index.js" />
       <root url="file://$PROJECT_DIR$/dist/dbtest.js" />
-      <root url="file://$PROJECT_DIR$/dist/json_schema.js" />
-      <root url="file://$PROJECT_DIR$/dist/library.js" />
       <root url="file://$PROJECT_DIR$/dist/user_auth.js" />
       <root url="file://$PROJECT_DIR$/dist/validate_schema.js" />
     </CLASSES>

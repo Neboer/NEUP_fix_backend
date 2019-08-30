@@ -7,6 +7,7 @@ import cookieParser from 'cookie-parser';
 import cryptoRandomString from "crypto-random-string";
 import schema from './validate_schema'
 import {make_user_info_db_in_req, auth_user, auth_admin, special_auth} from './user_auth'
+import {checkAndMakeCounter, updateAndGetNextIndexValue} from "./db_index";
 
 const mongo_url = 'mongodb://localhost:27017';
 const mongo_dbname = 'NEUP_fix';
@@ -25,11 +26,14 @@ client.connect().then((Client) => {
     const announcement = NEUP_fix.collection("announcement");// 公告表
     const user_info = NEUP_fix.collection("user_info");// 用户信息表
     const appointment = NEUP_fix.collection("appointment");// 所有的预约
+    const counter = NEUP_fix.collection("counter");// 计数器，用来记录appointment的appid和留言板的mesid的最终值（保存的是存在的值）
+    checkAndMakeCounter(counter);
     app.use(make_user_info_db_in_req(user_info));// 将用户信息表绑定在请求对象中，方便user_auth调用。
     app.use(function (req, res, next) {
         req.mongoDatabase = NEUP_fix; // 绑定整个数据库方便查询。并不是正式绑定而是临时绑定，所以查询用户用上面那个而并不直接调用这个。。。都是借口2333
         next()
     });
+
     app.get('/announcement', (req, res) => {
         announcement.find({}).toArray(((error, result) => {
             let pass_result = result.map((single_ann) => {
@@ -138,7 +142,7 @@ client.connect().then((Client) => {
 
     app.post('/app', auth_user, validate({body: schema.app_post_body}), ((req, res) => {
         let insert_data = req.body;
-        insert_data.appid = 2; // TODO: 自增运算！这个最好做成数据库操作。实在不行就用最lowb的办法，但可能用不到。
+        insert_data.appid = updateAndGetNextIndexValue("appid", counter);
         insert_data.status = "submitted";
         insert_data.app_exec_time = null;
         insert_data.member = null;// submitted状态下，还没有安排维修人员。
@@ -158,7 +162,7 @@ client.connect().then((Client) => {
 
     app.get('/app/:appid', auth_user, special_auth.appointment_detail_control, (req, res) => {// 获取一个预约的详细信息。
         // 这里为了代码简洁不择手段了，添加中间件增加了一次查询，我也不打算避开了。
-        appointment.findOne({appid: req.params.appid}).then(result => {
+        appointment.findOne({appid: parseInt(req.params.appid)}).then(result => {
                 let full_data = result;
                 delete full_data._id;
                 delete full_data.mes_list;
@@ -169,7 +173,7 @@ client.connect().then((Client) => {
 
     app.patch('/app/:appid', auth_user, validate({body: schema.app_update_body}), special_auth.appointment_detail_control, (req, res) => {
         // 检查update行为是否合法。不能对一个已经被标为“成功/失败/取消”的目标update
-        appointment.findOne({appid: req.query.appid}).then(result => {
+        appointment.findOne({appid: parseInt(req.query.appid)}).then(result => {
             let current_status = result.status;
             let update_status = req.body.status;
             if (current_status !== "submitted" && current_status !== "accepted") {
@@ -197,7 +201,7 @@ client.connect().then((Client) => {
     });
 
     app.put('/app/:appid', auth_user, validate({body: schema.app_post_body}), special_auth.appointment_detail_control, (req, res) => {
-        appointment.find({appid: req.params.appid}).toArray((error, result) => {
+        appointment.find({appid: parseInt(req.params.appid)}).toArray((error, result) => {
             let current_status = result[0].status;
             if (current_status !== "submitted") {
                 res.status(402).end("cannot update an accepted or terminated appointment")
@@ -217,7 +221,7 @@ client.connect().then((Client) => {
     });
 
     app.delete('/app/:appid', auth_user, validate({body: schema.app_delete_body}), special_auth.appointment_detail_control, (req, res) => {// 本来打算使用text，但是鉴于已经全局上了json body parser，因此就刻意的提交json吧！
-        appointment.updateOne({appid: req.params.appid}, {
+        appointment.updateOne({appid: parseInt(req.params.appid)}, {
             $set: {status: "canceled"}, $push: {
                 history: {
                     status: "canceled",
@@ -254,16 +258,21 @@ client.connect().then((Client) => {
 
     app.post('/app/:appid/messageboard', auth_user, validate({body: schema.mes_post_body}), (req, res) => {
         let insert_data = {
-            mesid: 1234, // TODO: 自增自增！
+            mesid: updateAndGetNextIndexValue("mesid", counter),
             userid: req.signedCookies.JSESSIONID,
             content_text: req.body.content_text,
             content_image: req.body.content_image,
             time: new Date()
         };
-        announcement.findOneAndUpdate({appid: parseInt(req.params.appid)}, {$push: {mes_list: insert_data}}).then(() => {
-                res.status(200).end("message successful")
+        announcement.findOneAndUpdate({appid: parseInt(req.params.appid)}, {$push: {mes_list: insert_data}}).then(result => {
+                /** @param {{updatedExisting:boolean}} result.lastErrorObject **/
+                if (result.lastErrorObject.updatedExisting) {
+                    res.status(200).end("message successful")
+                } else {
+                    res.status(404).end("no such appointment")
+                }
             }
-        );//TODO: 这里一定要有错误处理，因为可以一句话里一起解决，不需要中间件。
+        );//这里一定要有错误处理，因为可以一句话里一起解决，不需要中间件。
     });
 
     app.patch('/app/:appid/messageboard/:mesid', auth_user, validate({body: schema.mes_post_body}), special_auth.message_board_control, (req, res) => {
