@@ -5,7 +5,7 @@
 ## 项目
 本项目为东北大学先锋网络中心硬件维修的后端代码。后端系统采用node express，使用接近标准的RESTful接口，
 采用mongo作为数据库。
-api规范文档：[SwaggerOpenapi](https://app.swaggerhub.com/apis-docs/NEUP-Net-Depart/NEUP_fix2/3.0.0)
+api规范文档：[SwaggerOpenapi](https://app.swaggerhub.com/apis-docs/NEUP-Net-Depart/NEUP_fix3/4.0.0)
 
 ## 部署
 项目使用ES5，需要babel7编译后方可运行在node中。
